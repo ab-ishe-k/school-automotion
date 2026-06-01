@@ -170,7 +170,7 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
         >
           <AlertTriangle size={18} style={{ color: 'var(--danger)', flexShrink: 0 }} />
           <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
-            <strong style={{ color: 'var(--danger)' }}>BILLING DUES ALERT WARNING:</strong> Your quarterly tuition fees are currently <strong style={{ textTransform: 'uppercase' }}>{studentRecord.feeStatus}</strong> ($2,500). Please remind your parent (Sarah Smith) to log into the parent portal and clear the outstanding fees.
+            <strong style={{ color: 'var(--danger)' }}>BILLING DUES ALERT WARNING:</strong> Your quarterly tuition fees are currently <strong style={{ textTransform: 'uppercase' }}>{studentRecord.paymentStatus || studentRecord.feeStatus}</strong> (Pending Balance: ${studentRecord.pendingAmount || 0}, Tuition: ${studentRecord.monthlyTuitionFee || 0}, Bus Fee: ${studentRecord.busFee || 0}). Please remind your parent ({studentRecord.parentName || 'Parent'}) to log into the parent portal and clear the outstanding fees.
           </div>
         </div>
       )}

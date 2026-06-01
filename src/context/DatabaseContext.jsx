@@ -219,16 +219,42 @@ const INITIAL_STUDENTS = [
     name: 'Liam Chen',
     email: 'liam.chen@school.edu',
     class: 'Grade 11-A',
-    feeStatus: 'Outstanding', // Outstanding, Paid, Overdue
-    busRoute: 'Route 12'
+    rollNumber: '12',
+    parentName: 'Sarah Smith',
+    parentEmail: 'sarah.smith@school.edu',
+    parentContact: '555-012-9988',
+    admissionDate: '2026-06-01',
+    monthlyTuitionFee: 2000,
+    busFee: 500,
+    totalMonthlyFee: 2500,
+    paidAmount: 0,
+    pendingAmount: 2500,
+    pendingMonths: 1,
+    paymentDate: '',
+    paymentStatus: 'Pending',
+    feeStatus: 'Outstanding', // backward compatibility
+    remindersActive: true
   },
   {
     id: 'STD-10928',
     name: 'Emily Davis',
     email: 'emily.davis@school.edu',
     class: 'Grade 10-B',
+    rollNumber: '05',
+    parentName: 'Mr. John Davis',
+    parentEmail: 'john.davis@gmail.com',
+    parentContact: '555-019-9021',
+    admissionDate: '2026-05-15',
+    monthlyTuitionFee: 2000,
+    busFee: 0,
+    totalMonthlyFee: 2000,
+    paidAmount: 2000,
+    pendingAmount: 0,
+    pendingMonths: 0,
+    paymentDate: '2026-05-28',
+    paymentStatus: 'Paid',
     feeStatus: 'Paid',
-    busRoute: 'None'
+    remindersActive: false
   }
 ];
 
@@ -238,27 +264,48 @@ const INITIAL_STAFF = [
     name: 'Mr. Marcus Davis',
     role: 'Teacher',
     email: 'davis.math@school.edu',
-    salary: '4500',
+    phone: '555-018-4431',
+    designation: 'Mathematics Instructor',
     department: 'Math Dept',
-    dateJoined: '2021-08-15'
+    joiningDate: '2021-08-15',
+    monthlySalary: 4500,
+    salary: '4500', // backward compatibility
+    paidSalary: 0,
+    remainingSalary: 4500,
+    paymentDate: '',
+    paymentStatus: 'Pending'
   },
   {
     id: 'STF-90281',
     name: 'Dr. Adrian Vance',
     role: 'Principal',
     email: 'vance.principal@school.edu',
-    salary: '7500',
+    phone: '555-019-1002',
+    designation: 'Executive Principal',
     department: 'Principal Office',
-    dateJoined: '2018-05-10'
+    joiningDate: '2018-05-10',
+    monthlySalary: 7500,
+    salary: '7500',
+    paidSalary: 0,
+    remainingSalary: 7500,
+    paymentDate: '',
+    paymentStatus: 'Pending'
   },
   {
     id: 'STF-10291',
     name: 'Ms. Clara Vance',
     role: 'Vice Principal',
     email: 'vance.vp@school.edu',
-    salary: '6000',
+    phone: '555-012-3841',
+    designation: 'Academic Vice Principal',
     department: 'VP Office',
-    dateJoined: '2019-10-01'
+    joiningDate: '2019-10-01',
+    monthlySalary: 6000,
+    salary: '6000',
+    paidSalary: 0,
+    remainingSalary: 6000,
+    paymentDate: '',
+    paymentStatus: 'Pending'
   }
 ];
 
@@ -303,6 +350,17 @@ export const DatabaseProvider = ({ children }) => {
     const data = localStorage.getItem('school_staff');
     return data ? JSON.parse(data) : INITIAL_STAFF;
   });
+
+  const [googleSheetsUrl, setGoogleSheetsUrl] = useState(() => {
+    return localStorage.getItem('school_google_sheets_url') || '';
+  });
+
+  const [apiLogs, setApiLogs] = useState([]);
+
+  // Sync googleSheetsUrl to localStorage
+  useEffect(() => {
+    localStorage.setItem('school_google_sheets_url', googleSheetsUrl);
+  }, [googleSheetsUrl]);
 
   const [notifications, setNotifications] = useState([]);
 
@@ -804,10 +862,130 @@ export const DatabaseProvider = ({ children }) => {
     pushNotification(`Complaint ${id} escalated to Principal Vance.`, 'danger');
   };
 
+  // Cloud Sync Layer
+  const syncCloudSheet = async (action, sheetName, payload) => {
+    if (!googleSheetsUrl) {
+      const simLog = {
+        id: `sim-${Date.now()}-${Math.random()}`,
+        timestamp: new Date().toISOString(),
+        action,
+        sheet: sheetName,
+        payload,
+        status: 'SUCCESS (LOCAL SIM)',
+        responseText: 'Synchronized with local simulated database spreadsheet.'
+      };
+      setApiLogs(prev => [simLog, ...prev]);
+      return { success: true };
+    }
+
+    try {
+      const pendingLog = {
+        id: `api-${Date.now()}-${Math.random()}`,
+        timestamp: new Date().toISOString(),
+        action,
+        sheet: sheetName,
+        payload,
+        status: 'PENDING',
+        responseText: ''
+      };
+      setApiLogs(prev => [pendingLog, ...prev]);
+
+      const response = await fetch(googleSheetsUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action,
+          sheet: sheetName,
+          ...payload
+        })
+      });
+
+      setApiLogs(prev =>
+        prev.map(l =>
+          l.action === action && l.sheet === sheetName && l.status === 'PENDING'
+            ? { ...l, status: 'SUCCESS (OK)', responseText: 'Opaque response dispatched.' }
+            : l
+        )
+      );
+      return { success: true };
+    } catch (err) {
+      setApiLogs(prev =>
+        prev.map(l =>
+          l.action === action && l.sheet === sheetName && l.status === 'PENDING'
+            ? { ...l, status: 'ERROR', responseText: err.message }
+            : l
+        )
+      );
+      return { success: false, error: err.message };
+    }
+  };
+
+  // 7-Day Student Fee Reminder Dispatch Loop
+  const runDuesReminderLoop = (currentUser) => {
+    let sentCount = 0;
+    students.forEach(std => {
+      if (std.remindersActive && std.pendingAmount > 0) {
+        sentCount++;
+        sendEmail(
+          std.parentEmail || 'parent@school.edu',
+          `⚠️ ACTION REQUIRED: Outstanding Student Fees Reminder - ${std.name}`,
+          `Dear ${std.parentName},\n\nThis is an automated 7-day security reminder regarding outstanding student accounts for ${std.name} (${std.class}).\n\nFee Breakdown:\n========================\n- Tuition Fee Dues: $${std.monthlyTuitionFee}\n- Transport Fee Dues: $${std.busFee}\n- Total Outstanding Dues: $${std.pendingAmount}\n- Overdue Account Months: ${std.pendingMonths} Month(s)\n========================\n\nPlease click the link below to resolve outstanding fees:\nhttp://localhost:5173/parent-billing\n\nIf you have already processed your payments, please disregard this alert. Thank you.`
+        );
+      }
+    });
+
+    addAuditLog(
+      currentUser.name,
+      currentUser.role,
+      `Executed 7-Day Fee Reminder Sweep`,
+      `Scanned student roster. Dispatched simulated reminder emails to ${sentCount} parents.`
+    );
+
+    pushNotification(`Completed 7-day reminder sweep. ${sentCount} alerts sent to parents.`, 'success');
+  };
+
   // 4. ACCOUNTING & TRANSACTION ACTIONS
   const payFee = (payerName, type, amount, cardDetails, currentUser) => {
     const payId = `PAY-${Math.floor(10000 + Math.random() * 90000)}`;
     const txId = `tx_gate_${Math.floor(100000 + Math.random() * 900000)}`;
+
+    const amtPaid = Number(amount);
+    
+    // Find Student
+    const studentToUpdate = (currentUser.role === 'Parent') ? 'Liam Chen' : currentUser.name;
+    
+    let updatedStd = null;
+    setStudents(prev => 
+      prev.map(std => {
+        if (std.name === studentToUpdate) {
+          const newPaid = Number(std.paidAmount || 0) + amtPaid;
+          const newPending = Math.max(0, Number(std.totalMonthlyFee) - newPaid);
+          
+          let status = 'Pending';
+          if (newPending <= 0) {
+            status = 'Paid';
+          } else if (newPaid > 0) {
+            status = 'Partial';
+          }
+          
+          updatedStd = {
+            ...std,
+            paidAmount: newPaid,
+            pendingAmount: newPending,
+            pendingMonths: newPending <= 0 ? 0 : std.pendingMonths,
+            paymentStatus: status,
+            feeStatus: status === 'Paid' ? 'Paid' : 'Outstanding',
+            remindersActive: newPending > 0,
+            paymentDate: new Date().toISOString().split('T')[0]
+          };
+          return updatedStd;
+        }
+        return std;
+      })
+    );
 
     const newPayment = {
       id: payId,
@@ -822,49 +1000,80 @@ export const DatabaseProvider = ({ children }) => {
 
     setPayments(prev => [newPayment, ...prev]);
 
-    // Update Student Fee Dues Status if Tuition or Bus Fee paid
-    // Default child: Liam Chen
-    const studentToUpdate = (currentUser.role === 'Parent') ? 'Liam Chen' : currentUser.name;
-    
-    setStudents(prev => 
-      prev.map(std => {
-        if (std.name === studentToUpdate) {
-          return {
-            ...std,
-            feeStatus: type === 'Tuition Fee' ? 'Paid' : std.feeStatus
-          };
-        }
-        return std;
-      })
+    // Send confirmation email
+    const emailTo = `${currentUser.name.toLowerCase().replace(/\s+/g, '.')}@school.edu`;
+    sendEmail(
+      emailTo,
+      `💳 Beacon Fee Payment Confirmation - ID: ${payId}`,
+      `Dear Parent / Student,\n\nWe have successfully received your payment of $${amount} for "${type}".\n\nTransaction Receipt:\n========================\nPayment ID: ${payId}\nAmount Paid: $${amount}\nGateway Ref ID: ${txId}\nBilling Date: ${new Date().toLocaleDateString()}\nStatus: SUCCESSFUL\n========================\n\nYour student fee account has been updated automatically. Reminders have been stopped for cleared invoices.`
     );
 
     addAuditLog(
       currentUser.name,
       currentUser.role,
       `Completed Online Payment [${type}] ($${amount})`,
-      `Created Payments Sheet row (${payId}). Transaction ID: ${txId}. updated Student Dues status.`
+      `Updated Students table (Paid: $${updatedStd ? updatedStd.paidAmount : 0}, Pending: $${updatedStd ? updatedStd.pendingAmount : 0}). Recalculated balance status.`
     );
 
-    const emailTo = `${currentUser.name.toLowerCase().replace(' ', '.')}@school.edu`;
-    sendEmail(
-      emailTo,
-      `Billing Receipt & Invoice - Payout: PAID - ID: ${payId}`,
-      `Dear ${currentUser.name},\n\nWe have received your payment for "${type}" successfully.\n\nTransaction Receipt:\n========================\nPayment ID: ${payId}\nAmount Paid: $${amount}\nTransaction Status: SUCCESSFUL\nGateway Transaction ID: ${txId}\nBilling Date: ${new Date().toLocaleDateString()}\n========================\n\nYour student fee spreadsheet records have been updated to PAID. Thank you!`
-    );
-
-    pushNotification(`Payment of $${amount} for ${type} successful!`, 'success');
+    pushNotification(`Payment of $${amount} for ${type} processed successfully!`, 'success');
+    
+    // Sync to Cloud Sheet
+    if (updatedStd) {
+      syncCloudSheet('update', 'students', {
+        id: updatedStd.id,
+        updates: {
+          paidAmount: updatedStd.paidAmount,
+          pendingAmount: updatedStd.pendingAmount,
+          pendingMonths: updatedStd.pendingMonths,
+          paymentStatus: updatedStd.paymentStatus,
+          feeStatus: updatedStd.feeStatus,
+          remindersActive: updatedStd.remindersActive,
+          paymentDate: updatedStd.paymentDate
+        }
+      });
+      
+      syncCloudSheet('append', 'payments', {
+        row: [payId, payerName, currentUser.role, type, amount, newPayment.date, 'PAID', txId]
+      });
+    }
   };
 
   const payTeacherSalary = (teacherId, amount, currentUser) => {
     const payId = `PAY-${Math.floor(10000 + Math.random() * 90000)}`;
     const txId = `tx_salary_${Math.floor(100000 + Math.random() * 900000)}`;
     
-    // Find teacher
-    const teacher = staff.find(st => st.id === teacherId) || { name: 'Faculty Member', email: 'faculty@school.edu' };
+    const amtPaid = Number(amount);
+    let updatedTch = null;
+    
+    setStaff(prev =>
+      prev.map(member => {
+        if (member.id === teacherId) {
+          const newPaid = Number(member.paidSalary || 0) + amtPaid;
+          const newRemaining = Math.max(0, Number(member.monthlySalary) - newPaid);
+          
+          let status = 'Pending';
+          if (newRemaining <= 0) {
+            status = 'Paid';
+          } else if (newPaid > 0) {
+            status = 'Partial';
+          }
+          
+          updatedTch = {
+            ...member,
+            paidSalary: newPaid,
+            remainingSalary: newRemaining,
+            paymentStatus: status,
+            paymentDate: new Date().toISOString().split('T')[0]
+          };
+          return updatedTch;
+        }
+        return member;
+      })
+    );
 
     const newPayment = {
       id: payId,
-      userName: teacher.name,
+      userName: updatedTch ? updatedTch.name : 'Faculty Member',
       role: 'Teacher',
       paymentType: 'Teacher Salary',
       amount: amount,
@@ -875,33 +1084,67 @@ export const DatabaseProvider = ({ children }) => {
 
     setPayments(prev => [newPayment, ...prev]);
 
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Disbursed Teacher Salary Payout to Mr./Mrs. ${teacher.name}`,
-      `Created Payout row (${payId}). Transaction ID: ${txId}.`
-    );
+    if (updatedTch) {
+      sendEmail(
+        updatedTch.email,
+        `💸 Salary Slip & Credit Advice - PAID - ID: ${payId}`,
+        `Dear ${updatedTch.name},\n\nWe are pleased to inform you that your monthly salary payout of $${amount} has been successfully processed.\n\nSalary Slip Details:\n========================\nReference Payout ID: ${payId}\nAmount Paid: $${amount}\nRemaining Salary: $${updatedTch.remainingSalary}\nCredit Date: ${new Date().toLocaleDateString()}\nBank Reference ID: ${txId}\n========================\n\nPlease check your bank statement. Thank you for your continued dedication to Beacon High School.`
+      );
 
-    sendEmail(
-      teacher.email,
-      `Salary Slip & Credit Advice - PAID - ID: ${payId}`,
-      `Dear ${teacher.name},\n\nWe are pleased to inform you that your monthly salary payout of $${amount} has been credited.\n\nSalary Slip Details:\n========================\nReference Payout ID: ${payId}\nCredit Status: SUCCESSFUL / TRANSFERRED\nSalary Amount: $${amount}\nCredit Value Date: ${new Date().toLocaleDateString()}\nBank Transaction Reference ID: ${txId}\n========================\n\nPlease check your bank statement. Thank you for your continued dedication to Beacon High School.`
-    );
+      addAuditLog(
+        currentUser.name,
+        currentUser.role,
+        `Disbursed Teacher Salary Payout to Mr./Mrs. ${updatedTch.name}`,
+        `Disbursed $${amount}. Remaining salary: $${updatedTch.remainingSalary}. Ref Transaction: ${txId}.`
+      );
 
-    pushNotification(`Salary payout of $${amount} successfully transferred to ${teacher.name}.`, 'success');
+      pushNotification(`Salary payout of $${amount} successfully transferred to ${updatedTch.name}.`, 'success');
+      
+      // Cloud Sync
+      syncCloudSheet('update', 'staff', {
+        id: updatedTch.id,
+        updates: {
+          paidSalary: updatedTch.paidSalary,
+          remainingSalary: updatedTch.remainingSalary,
+          paymentStatus: updatedTch.paymentStatus,
+          paymentDate: updatedTch.paymentDate
+        }
+      });
+
+      syncCloudSheet('append', 'payments', {
+        row: [payId, updatedTch.name, 'Teacher', 'Teacher Salary', amount, newPayment.date, 'PAID', txId]
+      });
+    }
   };
 
   // 5. REGISTRATION ENROLLMENT
   const registerStudent = (studentData, currentUser) => {
     const stdId = `STD-${Math.floor(10000 + Math.random() * 90000)}`;
 
+    const tuition = Number(studentData.monthlyTuitionFee || 2000);
+    const bus = Number(studentData.busFee || 0);
+    const total = tuition + bus;
+
     const newStudent = {
       id: stdId,
       name: studentData.name,
       email: studentData.email,
       class: studentData.class || 'Grade 11-A',
+      rollNumber: studentData.rollNumber || String(Math.floor(1 + Math.random() * 40)).padStart(2, '0'),
+      parentName: studentData.parentName || 'Mr./Mrs. Parent',
+      parentEmail: studentData.parentEmail || 'parent@school.edu',
+      parentContact: studentData.parentContact || '555-019-0000',
+      admissionDate: studentData.admissionDate || new Date().toISOString().split('T')[0],
+      monthlyTuitionFee: tuition,
+      busFee: bus,
+      totalMonthlyFee: total,
+      paidAmount: 0,
+      pendingAmount: total,
+      pendingMonths: 1,
+      paymentDate: '',
+      paymentStatus: 'Pending',
       feeStatus: 'Outstanding',
-      busRoute: studentData.busRoute || 'None'
+      remindersActive: true
     };
 
     setStudents(prev => [...prev, newStudent]);
@@ -910,47 +1153,73 @@ export const DatabaseProvider = ({ children }) => {
       currentUser.name,
       currentUser.role,
       `Enrolled New Student: ${studentData.name} (${stdId})`,
-      `Logged row in Students spreadsheet. Set Fee Dues Status to Outstanding.`
+      `Logged row in Students spreadsheet. Total monthly fee set to $${total}.`
     );
 
     sendEmail(
-      studentData.email,
-      `Welcome to Beacon High School! Student ID: ${stdId}`,
-      `Dear ${studentData.name},\n\nWelcome! Your enrollment registration is complete.\n\nEnrollment details:\n========================\nStudent Assigned ID: ${stdId}\nClass Room: ${newStudent.class}\nTransportation Route: ${newStudent.busRoute}\nFee Dues Status: Outstanding ($2,500 Tuition)\n========================\n\nPlease alert your parents to complete outstanding quarterly tuition payment fees in the parent portal.`
+      studentData.parentEmail || 'parent@school.edu',
+      `🔔 Beacon High School: Student Admission & Dues Setup - ID: ${stdId}`,
+      `Dear ${studentData.parentName || 'Parent'},\n\nWelcome! Your child's (${studentData.name}) admission enrollment is complete.\n\nEnrollment Summary:\n========================\nStudent ID: ${stdId}\nClass Room: ${newStudent.class}\nAdmission Date: ${newStudent.admissionDate}\n\nOutstanding Billing Accounts:\n- Tuition Dues: $${tuition}/month\n- Transportation Dues: $${bus}/month\n- Monthly Total Fee Dues: $${total}\n========================\n\nPlease log into the Parent Billing Portal to clear your outstanding dues. Automated weekly reminders have been activated.`
     );
 
     pushNotification(`Successfully enrolled student: ${studentData.name}`, 'success');
+
+    // Cloud Sync
+    syncCloudSheet('append', 'students', {
+      row: [
+        stdId, newStudent.name, newStudent.email, newStudent.class, newStudent.rollNumber,
+        newStudent.parentName, newStudent.parentEmail, newStudent.parentContact, newStudent.admissionDate,
+        tuition, bus, total, 0, total, 1, '', 'Pending', 'Outstanding', true
+      ]
+    });
   };
 
   const registerTeacher = (teacherData, currentUser) => {
-    const teacherId = `STF-${Math.floor(10000 + Math.random() * 90000)}`;
+    const staffId = `STF-${Math.floor(10000 + Math.random() * 90000)}`;
+    const baseSalary = Number(teacherData.salary || 4500);
 
-    const newTeacher = {
-      id: teacherId,
+    const newStaff = {
+      id: staffId,
       name: teacherData.name,
-      role: 'Teacher',
+      role: teacherData.role || 'Teacher',
       email: teacherData.email,
-      salary: teacherData.salary || '4500',
+      phone: teacherData.phone || '555-019-0000',
+      designation: teacherData.designation || 'Academic Staff',
       department: teacherData.department || 'Advisory',
-      dateJoined: new Date().toISOString().split('T')[0]
+      joiningDate: teacherData.joiningDate || new Date().toISOString().split('T')[0],
+      monthlySalary: baseSalary,
+      salary: String(baseSalary), // backward compatibility
+      paidSalary: 0,
+      remainingSalary: baseSalary,
+      paymentDate: '',
+      paymentStatus: 'Pending'
     };
 
-    setStaff(prev => [...prev, newTeacher]);
+    setStaff(prev => [...prev, newStaff]);
 
     addAuditLog(
       currentUser.name,
       currentUser.role,
-      `Hired New Faculty Member: ${teacherData.name} (${teacherId})`,
-      `Logged row in Staff spreadsheet database. Monthly Contract Salary set to $${newTeacher.salary}.`
+      `Hired New Staff: ${teacherData.name} (${staffId})`,
+      `Logged row in Staff spreadsheet. Monthly salary set to $${baseSalary}.`
     );
 
     sendEmail(
       teacherData.email,
-      `Beacon High Appointment Offer Confirmation - ID: ${teacherId}`,
-      `Dear ${teacherData.name},\n\nWe are excited to formally welcome you to the Beacon High Faculty group!\n\nEmployment summary:\n========================\nStaff ID: ${teacherId}\nDepartment: ${newTeacher.department}\nContract Base Salary: $${newTeacher.salary}/month\n========================\n\nPlease log in to access your advisor schedule and academic queries dashboard.`
+      `🤝 Welcome to the Faculty: Offer of Appointment - ID: ${staffId}`,
+      `Dear ${teacherData.name},\n\nWe are pleased to formally welcome you to the advisory team at Beacon High School!\n\nEmployment Summary:\n========================\nStaff ID: ${staffId}\nAdvisory Role: ${newStaff.role}\nDepartment: ${newStaff.department}\nContract Salary: $${baseSalary}/month\nJoining Date: ${newStaff.joiningDate}\n========================\n\nPlease log into the staff portal using your unique temporary onboarding ID to set up your permanent credentials.`
     );
 
-    pushNotification(`Formally hired instructor: ${teacherData.name}`, 'success');
+    pushNotification(`Successfully hired staff member: ${teacherData.name}`, 'success');
+
+    // Cloud Sync
+    syncCloudSheet('append', 'staff', {
+      row: [
+        staffId, newStaff.name, newStaff.role, newStaff.email, newStaff.phone,
+        newStaff.designation, newStaff.department, newStaff.joiningDate,
+        baseSalary, 0, baseSalary, '', 'Pending'
+      ]
+    });
   };
 
   // Direct sheets editor (simulates manual database alterations by Admins)
@@ -989,6 +1258,12 @@ export const DatabaseProvider = ({ children }) => {
     );
 
     pushNotification(`Google Sheets: Row ${rowId} manually updated.`, 'info');
+
+    // Cloud Sync
+    syncCloudSheet('update', sheetName, {
+      id: rowId,
+      updates: updatedFields
+    });
   };
 
   const deleteSheetRow = (sheetName, rowId, adminUser) => {
@@ -1014,6 +1289,11 @@ export const DatabaseProvider = ({ children }) => {
     );
 
     pushNotification(`Google Sheets: Row ${rowId} deleted.`, 'warning');
+
+    // Cloud Sync
+    syncCloudSheet('delete', sheetName, {
+      id: rowId
+    });
   };
 
   const resetAllData = (adminUser) => {
@@ -1048,6 +1328,10 @@ export const DatabaseProvider = ({ children }) => {
         students,
         staff,
         notifications,
+        googleSheetsUrl,
+        setGoogleSheetsUrl,
+        apiLogs,
+        runDuesReminderLoop,
         bookAppointment,
         approveAppointment,
         rejectAppointment,

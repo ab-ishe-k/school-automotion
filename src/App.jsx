@@ -12,6 +12,9 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Login from './components/Login';
 import IntegrationTab from './components/IntegrationTab';
+import IDGenerator from './components/IDGenerator';
+
+import OnboardingSetup from './components/OnboardingSetup';
 
 // Role Dashboards
 import PrincipalDashboard from './dashboards/PrincipalDashboard';
@@ -45,6 +48,11 @@ const MainAppLayout = () => {
 
   if (!currentUser) {
     return <Login />;
+  }
+
+  // Force onboarding setup if it's the user's first login
+  if (!currentUser.isSetupCompleted) {
+    return <OnboardingSetup />;
   }
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
@@ -83,6 +91,8 @@ const MainAppLayout = () => {
       return renderDashboardByRole(activeSection, setActiveSection);
     } else if (activeSection === 'integrations') {
       return <IntegrationTab />;
+    } else if (activeSection === 'id-generator') {
+      return <IDGenerator activeSection={activeSection} setActiveSection={setActiveSection} />;
     } else {
       return renderDashboardByRole(activeSection, setActiveSection);
     }

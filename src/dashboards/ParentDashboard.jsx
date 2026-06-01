@@ -326,16 +326,18 @@ const ParentDashboard = ({ activeSection, setActiveSection }) => {
                   <tr>
                     <td style={{ fontWeight: '600' }}>Quarterly School Tuition Fee</td>
                     <td>Q2 (June - Aug 2026)</td>
-                    <td style={{ fontWeight: '700', fontSize: '15px' }}>$2,500</td>
+                    <td style={{ fontWeight: '700', fontSize: '15px' }}>${wardRecord.monthlyTuitionFee || 0}</td>
                     <td>
-                      {wardRecord.feeStatus === 'Paid' ? (
+                      {wardRecord.paidAmount >= (wardRecord.monthlyTuitionFee || 0) ? (
                         <span className="status-badge approved">PAID SUCCESSFUL</span>
+                      ) : wardRecord.paidAmount > 0 ? (
+                        <span className="status-badge pending">PARTIAL PAY (${(wardRecord.monthlyTuitionFee || 0) - wardRecord.paidAmount} due)</span>
                       ) : (
                         <span className="status-badge pending">OUTSTANDING DUES</span>
                       )}
                     </td>
                     <td>
-                      {wardRecord.feeStatus === 'Paid' ? (
+                      {wardRecord.paidAmount >= (wardRecord.monthlyTuitionFee || 0) ? (
                         <span style={{ color: 'var(--success)', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <CheckCircle size={14} /> Receipts Sent
                         </span>
@@ -343,7 +345,7 @@ const ParentDashboard = ({ activeSection, setActiveSection }) => {
                         <button 
                           className="btn btn-primary" 
                           style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                          onClick={() => setCheckoutItem({ type: 'Tuition Fee', amount: '2500' })}
+                          onClick={() => setCheckoutItem({ type: 'Tuition Fee', amount: String((wardRecord.monthlyTuitionFee || 0) - wardRecord.paidAmount) })}
                         >
                           <CreditCard size={12} />
                           Pay Tuition Dues
@@ -355,15 +357,39 @@ const ParentDashboard = ({ activeSection, setActiveSection }) => {
                   {/* Bus Fee Item */}
                   <tr>
                     <td style={{ fontWeight: '600' }}>School Bus Transportation Fee</td>
-                    <td>Q2 Route 12 Services</td>
-                    <td style={{ fontWeight: '700', fontSize: '15px' }}>$150</td>
+                    <td>{wardRecord.busFee > 0 ? 'Q2 Route 12 Services' : 'Not Enrolled'}</td>
+                    <td style={{ fontWeight: '700', fontSize: '15px' }}>${wardRecord.busFee || 0}</td>
                     <td>
-                      <span className="status-badge approved">PAID SUCCESSFUL</span>
+                      {wardRecord.busFee === 0 ? (
+                        <span className="status-badge approved">NOT ENROLLED</span>
+                      ) : wardRecord.paidAmount >= (wardRecord.totalMonthlyFee || 0) ? (
+                        <span className="status-badge approved">PAID SUCCESSFUL</span>
+                      ) : wardRecord.paidAmount > (wardRecord.monthlyTuitionFee || 0) ? (
+                        <span className="status-badge pending">PARTIAL PAY (${(wardRecord.totalMonthlyFee || 0) - wardRecord.paidAmount} due)</span>
+                      ) : (
+                        <span className="status-badge pending">OUTSTANDING DUES</span>
+                      )}
                     </td>
                     <td>
-                      <span style={{ color: 'var(--success)', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <CheckCircle size={14} /> Receipts Sent
-                      </span>
+                      {wardRecord.busFee === 0 ? (
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>—</span>
+                      ) : wardRecord.paidAmount >= (wardRecord.totalMonthlyFee || 0) ? (
+                        <span style={{ color: 'var(--success)', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle size={14} /> Receipts Sent
+                        </span>
+                      ) : (
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          onClick={() => setCheckoutItem({ 
+                            type: 'Bus Fee', 
+                            amount: String((wardRecord.totalMonthlyFee || 0) - Math.max(wardRecord.monthlyTuitionFee || 0, wardRecord.paidAmount)) 
+                          })}
+                        >
+                          <CreditCard size={12} />
+                          Pay Bus Fee
+                        </button>
+                      )}
                     </td>
                   </tr>
                 </tbody>

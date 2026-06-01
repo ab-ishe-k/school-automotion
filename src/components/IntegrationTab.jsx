@@ -11,7 +11,13 @@ import {
   Clock, 
   Tag, 
   FileText,
-  AlertCircle
+  AlertCircle,
+  Settings,
+  Link2,
+  Code,
+  Terminal,
+  ClipboardCopy,
+  Check
 } from 'lucide-react';
 
 const IntegrationTab = () => {
@@ -23,7 +29,10 @@ const IntegrationTab = () => {
     students,
     staff,
     virtualEmails, 
-    pushNotification 
+    pushNotification,
+    googleSheetsUrl,
+    setGoogleSheetsUrl,
+    apiLogs
   } = useDatabase();
   const { quickProfiles } = useAuth();
   
@@ -37,6 +46,73 @@ const IntegrationTab = () => {
   const [selectedMailUser, setSelectedMailUser] = useState('Liam Chen'); // switcher
   const [activeEmailId, setActiveEmailId] = useState(null);
   const [emailSearch, setEmailSearch] = useState('');
+
+  // Apps Script code drawer states
+  const [showCodeDrawer, setShowCodeDrawer] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+
+  const appsScriptCode = `/* Google Apps Script code to deploy on your spreadsheet container */
+function doGet(e) {
+  var sheetName = e.parameter.sheet || "students";
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) return ContentService.createTextOutput(JSON.stringify({error: "Sheet not found"})).setMimeType(ContentService.MimeType.JSON);
+  
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var rows = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = {};
+    for (var j = 0; j < headers.length; j++) {
+      row[headers[j]] = data[i][j];
+    }
+    rows.push(row);
+  }
+  return ContentService.createTextOutput(JSON.stringify(rows)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var params = JSON.parse(e.postData.contents);
+  var action = params.action; // append, update, delete
+  var sheetName = params.sheet;
+  
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) return ContentService.createTextOutput(JSON.stringify({success: false, error: "Sheet not found"})).setMimeType(ContentService.MimeType.JSON);
+  
+  if (action === "append") {
+    sheet.appendRow(params.row);
+    return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+  } else if (action === "update") {
+    var data = sheet.getDataRange().getValues();
+    var idCol = 0; // Assuming ID is first column
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][idCol].toString() === params.id.toString()) {
+        for (var key in params.updates) {
+          var colIdx = data[0].indexOf(key);
+          if (colIdx > -1) {
+            sheet.getCell(i + 1, colIdx + 1).setValue(params.updates[key]);
+          }
+        }
+        return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+  } else if (action === "delete") {
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0].toString() === params.id.toString()) {
+        sheet.deleteRow(i + 1);
+        return ContentService.createTextOutput(JSON.stringify({success: true})).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({success: false})).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(appsScriptCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+    pushNotification('Google Apps Script setup code copied to clipboard!', 'success');
+  };
 
   // 1. CSV EXPORTER UTILITY
   const exportToCSV = (sheetName, data) => {
@@ -53,9 +129,9 @@ const IntegrationTab = () => {
     } else if (sheetName === 'payments') {
       headers = ["Payment ID", "User Name", "Role", "Payment Type", "Amount", "Date", "Status", "Transaction ID"];
     } else if (sheetName === 'students') {
-      headers = ["Student ID", "Name", "Email", "Class", "Fee Status", "Bus Route"];
+      headers = ["Student ID", "Name", "Email", "Class", "Roll Number", "Parent Name", "Parent Email", "Parent Phone", "Admission Date", "Tuition Fee", "Bus Fee", "Total Monthly Fee", "Paid Amount", "Pending Amount", "Pending Months", "Payment Date", "Payment Status"];
     } else if (sheetName === 'staff') {
-      headers = ["Staff ID", "Name", "Role", "Email", "Salary", "Department", "Date Joined"];
+      headers = ["Staff ID", "Name", "Role", "Email", "Phone", "Designation", "Department", "Joined Date", "Salary", "Paid Salary", "Remaining Salary", "Payment Date", "Payment Status"];
     }
 
     csvContent += headers.map(h => `"${h}"`).join(",") + "\n";
@@ -72,9 +148,9 @@ const IntegrationTab = () => {
       } else if (sheetName === 'payments') {
         rowValues = [row.id, row.userName, row.role, row.paymentType, row.amount, row.date, row.status, row.transactionId];
       } else if (sheetName === 'students') {
-        rowValues = [row.id, row.name, row.email, row.class, row.feeStatus, row.busRoute];
+        rowValues = [row.id, row.name, row.email, row.class, row.rollNumber || '', row.parentName || '', row.parentEmail || '', row.parentContact || '', row.admissionDate || '', row.monthlyTuitionFee || 0, row.busFee || 0, row.totalMonthlyFee || 0, row.paidAmount || 0, row.pendingAmount || 0, row.pendingMonths || 0, row.paymentDate || '', row.paymentStatus || 'Pending'];
       } else if (sheetName === 'staff') {
-        rowValues = [row.id, row.name, row.role, row.email, row.salary, row.department, row.dateJoined];
+        rowValues = [row.id, row.name, row.role, row.email, row.phone || '', row.designation || '', row.department || '', row.joiningDate || row.dateJoined || '', row.monthlySalary || row.salary || 0, row.paidSalary || 0, row.remainingSalary || 0, row.paymentDate || '', row.paymentStatus || 'Pending'];
       }
       csvContent += rowValues.map(v => `"${(v || '').toString().replace(/"/g, '""')}"`).join(",") + "\n";
     });
@@ -176,6 +252,46 @@ const IntegrationTab = () => {
       {/* 1. GOOGLE SHEETS SIMULATOR VIEW */}
       {activeSubTab === 'sheets' && (
         <div className="sheets-container">
+          
+          {/* Cloud Connection Configuration Widget */}
+          <div className="glass-panel" style={{ padding: '20px', marginBottom: '20px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <Settings size={18} style={{ color: 'var(--primary-light)' }} />
+                Google Sheets Cloud Connection Console
+              </h3>
+              <p style={{ fontSize: '11.5px', color: 'var(--text-secondary)', margin: 0 }}>
+                Paste your deployed Google Apps Script Web App URL below to sync student rosters, staff sheets, and payment transactions directly to a live Google Spreadsheet. Leave empty to run the Local Simulation Engine.
+              </p>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0 10px', flex: 1 }}>
+                  <Link2 size={14} style={{ color: 'var(--text-tertiary)' }} />
+                  <input 
+                    type="text" 
+                    placeholder="https://script.google.com/macros/s/.../exec"
+                    style={{ border: 'none', background: 'none', padding: '8px 0', fontSize: '11px', width: '100%', outline: 'none', color: 'var(--text-primary)' }}
+                    value={googleSheetsUrl}
+                    onChange={e => setGoogleSheetsUrl(e.target.value)}
+                  />
+                </div>
+                <button 
+                  className="btn btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', padding: '0 12px', whiteSpace: 'nowrap' }}
+                  onClick={() => setShowCodeDrawer(true)}
+                >
+                  <Code size={14} />
+                  Apps Script Code
+                </button>
+              </div>
+              <span style={{ fontSize: '10px', color: googleSheetsUrl ? 'var(--success)' : 'var(--warning)', fontWeight: '600' }}>
+                {googleSheetsUrl ? '🟢 Cloud Sync Mode Active: Syncing REST rows directly to Google Sheets.' : '🟡 Local Simulation Active: Syncing rows to local browser storage.'}
+              </span>
+            </div>
+          </div>
+
           <div className="sheets-tabs-bar" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
             {['appointments', 'queries', 'complaints', 'payments', 'students', 'staff'].map(sheet => (
               <button 
@@ -272,10 +388,21 @@ const IntegrationTab = () => {
                   <tr>
                     <th>Student ID</th>
                     <th>Name</th>
-                    <th>Email Address</th>
-                    <th>Assigned Class</th>
-                    <th>Quarterly Fee Status</th>
-                    <th>Bus Route</th>
+                    <th>Email</th>
+                    <th>Class</th>
+                    <th>Roll No</th>
+                    <th>Parent Name</th>
+                    <th>Parent Email</th>
+                    <th>Parent Phone</th>
+                    <th>Admit Date</th>
+                    <th>Tuition ($)</th>
+                    <th>Bus Fee ($)</th>
+                    <th>Total ($)</th>
+                    <th>Paid ($)</th>
+                    <th>Pending ($)</th>
+                    <th>Months</th>
+                    <th>Pay Date</th>
+                    <th>Status</th>
                   </tr>
                 )}
                 {activeSheet === 'staff' && (
@@ -283,17 +410,23 @@ const IntegrationTab = () => {
                     <th>Staff ID</th>
                     <th>Name</th>
                     <th>Role</th>
-                    <th>Email Address</th>
-                    <th>Contract Salary ($/mo)</th>
-                    <th>Advisory Department</th>
-                    <th>Date Joined</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Designation</th>
+                    <th>Department</th>
+                    <th>Joined Date</th>
+                    <th>Salary ($)</th>
+                    <th>Paid ($)</th>
+                    <th>Remaining ($)</th>
+                    <th>Pay Date</th>
+                    <th>Status</th>
                   </tr>
                 )}
               </thead>
               <tbody>
                 {getFilteredSheetData().length === 0 ? (
                   <tr>
-                    <td colSpan="10" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
+                    <td colSpan="18" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
                       No records found in this cloud spreadsheet tab.
                     </td>
                   </tr>
@@ -371,10 +504,21 @@ const IntegrationTab = () => {
                           <td style={{ fontWeight: '600' }}>{row.name}</td>
                           <td>{row.email}</td>
                           <td>{row.class}</td>
+                          <td>{row.rollNumber || '—'}</td>
+                          <td>{row.parentName || '—'}</td>
+                          <td>{row.parentEmail || '—'}</td>
+                          <td>{row.parentContact || '—'}</td>
+                          <td>{row.admissionDate || '—'}</td>
+                          <td>${row.monthlyTuitionFee}</td>
+                          <td>${row.busFee}</td>
+                          <td style={{ fontWeight: '700' }}>${row.totalMonthlyFee}</td>
+                          <td style={{ color: 'var(--success)', fontWeight: '600' }}>${row.paidAmount}</td>
+                          <td style={{ color: row.pendingAmount > 0 ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: '600' }}>${row.pendingAmount}</td>
+                          <td>{row.pendingMonths}</td>
+                          <td>{row.paymentDate || '—'}</td>
                           <td>
-                            <span className={`status-badge ${row.feeStatus === 'Paid' ? 'approved' : 'pending'}`}>{row.feeStatus}</span>
+                            <span className={`status-badge ${(row.paymentStatus || 'Pending').toLowerCase()}`}>{row.paymentStatus || 'Pending'}</span>
                           </td>
-                          <td>{row.busRoute}</td>
                         </>
                       )}
                       {activeSheet === 'staff' && (
@@ -383,9 +527,17 @@ const IntegrationTab = () => {
                           <td style={{ fontWeight: '600' }}>{row.name}</td>
                           <td>{row.role}</td>
                           <td>{row.email}</td>
-                          <td style={{ fontWeight: '700' }}>${row.salary}</td>
+                          <td>{row.phone || '—'}</td>
+                          <td>{row.designation || '—'}</td>
                           <td>{row.department}</td>
-                          <td>{row.dateJoined}</td>
+                          <td>{row.joiningDate || row.dateJoined || '—'}</td>
+                          <td style={{ fontWeight: '700' }}>${row.monthlySalary || row.salary}</td>
+                          <td style={{ color: 'var(--success)', fontWeight: '600' }}>${row.paidSalary || 0}</td>
+                          <td style={{ color: (row.remainingSalary || 0) > 0 ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: '600' }}>${row.remainingSalary || 0}</td>
+                          <td>{row.paymentDate || '—'}</td>
+                          <td>
+                            <span className={`status-badge ${(row.paymentStatus || 'Pending').toLowerCase()}`}>{row.paymentStatus || 'Pending'}</span>
+                          </td>
                         </>
                       )}
                     </tr>
@@ -394,6 +546,39 @@ const IntegrationTab = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Live REST API Synchronization Log Terminal */}
+          <div className="glass-panel" style={{ padding: '20px', marginTop: '24px', backgroundColor: 'var(--bg-tertiary)' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <Terminal size={16} style={{ color: 'var(--primary-light)' }} />
+              Background Cloud Database REST Sync Terminal
+            </h3>
+            
+            <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', fontFamily: 'monospace', fontSize: '11px', padding: '12px', backgroundColor: '#090b0f', color: '#00f0ff', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+              {apiLogs.length === 0 ? (
+                <div style={{ color: 'rgba(0, 240, 255, 0.4)', textAlign: 'center', padding: '20px' }}>
+                  // Terminal Idle. Execute student admissions, record parent fee payments, or process staff salaries to trigger database sync webhook events.
+                </div>
+              ) : (
+                apiLogs.map(log => (
+                  <div key={log.id} style={{ borderBottom: '1px dashed rgba(0, 240, 255, 0.1)', paddingBottom: '6px', textAlign: 'left' }}>
+                    <span style={{ color: '#ff0055' }}>[{new Date(log.timestamp).toLocaleTimeString()}]</span>{' '}
+                    <span style={{ color: '#10b981', fontWeight: 'bold' }}>{log.action?.toUpperCase() || 'POST'}</span>{' '}
+                    <span style={{ color: 'var(--primary-light)', fontWeight: 'bold' }}>{log.sheet?.toUpperCase() || 'API'}</span>{' '}
+                    <span style={{ color: '#cbd5e1' }}>→ Status:</span>{' '}
+                    <span style={{ color: log.status.includes('ERROR') ? 'var(--danger)' : '#10b981', fontWeight: 'bold' }}>{log.status}</span>
+                    <div style={{ color: '#94a3b8', paddingLeft: '12px', marginTop: '2px' }}>
+                      Payload: {JSON.stringify(log.payload)}
+                    </div>
+                    <div style={{ color: '#64748b', paddingLeft: '12px' }}>
+                      Response: {log.responseText}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
         </div>
       )}
 
@@ -537,6 +722,65 @@ const IntegrationTab = () => {
                 <span className="calendar-cell-num" style={{ opacity: 0.3 }}>{idx + 1}</span>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* 4. GOOGLE APPS SCRIPT CODE SETUP DRAWER MODAL */}
+      {showCodeDrawer && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '650px', backgroundColor: 'var(--bg-secondary)', overflow: 'hidden', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-tertiary)' }}>
+              <span style={{ fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Code size={16} style={{ color: 'var(--primary-light)' }} />
+                Google Apps Script Cloud Setup Console
+              </span>
+              <button 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', color: 'var(--text-secondary)' }}
+                onClick={() => setShowCodeDrawer(false)}
+              >
+                ×
+              </button>
+            </div>
+            
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, overflowY: 'auto', maxHeight: '450px' }}>
+              <div>
+                <h4 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '4px' }}>How to connect to real Google Sheets:</h4>
+                <ol style={{ fontSize: '12px', color: 'var(--text-secondary)', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <li>Create a new **Google Sheet** and name three sheets/tabs: `students`, `staff`, and `payments`.</li>
+                  <li>In Google Sheets, go to **Extensions** → **Apps Script**.</li>
+                  <li>Clear any default code, paste the script code below, and click **Save**.</li>
+                  <li>Click **Deploy** → **New Deployment**. Select **Web App** type.</li>
+                  <li>Configure: *Execute as:* **Me**, *Who has access:* **Anyone** (required for fetch API authorization).</li>
+                  <li>Copy the generated **Web App URL** and paste it into our **Cloud Connection Console** in the tab above!</li>
+                </ol>
+              </div>
+
+              <div style={{ position: 'relative' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontFamily: 'monospace' }}>Google Apps Script Automation Code:</span>
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ fontSize: '11px', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    onClick={handleCopyCode}
+                  >
+                    {copiedCode ? <Check size={12} style={{ color: 'var(--success)' }} /> : <ClipboardCopy size={12} />}
+                    {copiedCode ? 'Copied!' : 'Copy Code'}
+                  </button>
+                </div>
+                <textarea 
+                  readOnly 
+                  style={{ width: '100%', height: '180px', fontFamily: 'monospace', fontSize: '11px', padding: '10px', backgroundColor: '#090b0f', color: '#00f0ff', border: '1px solid var(--border-color)', borderRadius: '4px', resize: 'none', outline: 'none' }}
+                  value={appsScriptCode}
+                />
+              </div>
+            </div>
+            
+            <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', backgroundColor: 'var(--bg-tertiary)' }}>
+              <button className="btn btn-primary" onClick={() => setShowCodeDrawer(false)}>
+                Done & Close Setup
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -10,7 +10,8 @@ import {
   Users, 
   LogOut,
   Sparkles,
-  BookOpen
+  BookOpen,
+  CreditCard
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => {
@@ -63,6 +64,7 @@ const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => 
           { id: 'appointments', label: 'Schedules Manager', icon: Calendar },
           { id: 'queries', label: 'Queries Routing', icon: MessageSquare },
           { id: 'complaints', label: 'Complaints Resolution', icon: AlertTriangle },
+          { id: 'id-generator', label: 'ID Card Generator', icon: CreditCard },
           { id: 'integrations', label: 'Live Database Sheets', icon: Database }
         ];
       case 'Reception / Office Staff':
@@ -71,6 +73,7 @@ const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => 
           { id: 'appointments', label: 'Visitor Booking Queue', icon: Calendar },
           { id: 'queries', label: 'Reception Queries Desk', icon: MessageSquare },
           { id: 'complaints', label: 'Submit Incidents', icon: AlertTriangle },
+          { id: 'id-generator', label: 'ID Card Generator', icon: CreditCard },
           { id: 'integrations', label: 'Simulators Sync', icon: Database }
         ];
       case 'Vice Principal':

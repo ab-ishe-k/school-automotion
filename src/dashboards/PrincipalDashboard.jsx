@@ -13,7 +13,12 @@ import {
   ShieldAlert, 
   ChevronRight,
   RefreshCw,
-  Search
+  Search,
+  Download,
+  Users,
+  Briefcase,
+  DollarSign,
+  Lock
 } from 'lucide-react';
 
 const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
@@ -22,14 +27,13 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
     queries, 
     complaints, 
     auditLogs, 
-    approveAppointment, 
-    rejectAppointment, 
-    rescheduleAppointment,
-    updateComplaintStatus 
+    students,
+    staff,
+    payments
   } = useDatabase();
   const { currentUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('overview'); // overview, approvals, escalations, audits
+  const [activeTab, setActiveTab] = useState('overview'); // overview, approvals, escalations, students, staff, payments, audits
 
   // Sync sidebar clicks with internal principal dashboard tabs
   useEffect(() => {
@@ -44,13 +48,18 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
       setActiveTab('escalations');
     }
   }, [activeSection]);
-  const [selectedApt, setSelectedApt] = useState(null);
-  const [resolutionText, setResolutionText] = useState('');
-  const [actionType, setActionType] = useState(''); // approve, reject, reschedule
-  
-  // Reschedule states
-  const [newDate, setNewDate] = useState('');
-  const [newTime, setNewTime] = useState('');
+
+  // Report Search & Filter states
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentClassFilter, setStudentClassFilter] = useState('');
+  const [studentStatusFilter, setStudentStatusFilter] = useState('');
+
+  const [staffSearch, setStaffSearch] = useState('');
+  const [staffDeptFilter, setStaffDeptFilter] = useState('');
+  const [staffStatusFilter, setStaffStatusFilter] = useState('');
+
+  const [paymentSearch, setPaymentSearch] = useState('');
+  const [paymentTypeFilter, setPaymentTypeFilter] = useState('');
 
   // 1. CALCULATE Executive Metrics
   const totalAppointments = appointments.length;
@@ -69,28 +78,79 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
     escalatedComplaints
   };
 
-  // 2. PREPARE Chart Data
+  // 2. FINANCIAL AGGREGATIONS
+  const totalFeesCollected = payments
+    .filter(p => p.paymentType !== 'Teacher Salary' && p.status === 'PAID')
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+  const totalSalariesPaid = payments
+    .filter(p => p.paymentType === 'Teacher Salary' && p.status === 'PAID')
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+  const totalOutstandingDues = students
+    .reduce((sum, s) => sum + Number(s.pendingAmount || 0), 0);
+
+  // 3. PREPARE Chart Data
+  // Dynamic Month Fee Collection Trend
+  const feePaymentsSum = payments
+    .filter(p => p.paymentType !== 'Teacher Salary' && p.status === 'PAID')
+    .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
   const trendData = [
-    { label: 'Jan', value: 12 },
-    { label: 'Feb', value: 19 },
-    { label: 'Mar', value: 26 },
-    { label: 'Apr', value: 34 },
-    { label: 'May', value: totalAppointments + totalQueries + totalComplaints }
+    { label: 'Jan', value: 4500 },
+    { label: 'Feb', value: 5800 },
+    { label: 'Mar', value: 7200 },
+    { label: 'Apr', value: 6500 },
+    { label: 'May', value: 8000 + feePaymentsSum }
   ];
 
-  // Count complaints by type
+  // Outstanding Dues group by Class
+  const classDuesMap = students.reduce((acc, s) => {
+    if (s.pendingAmount > 0) {
+      const cls = s.class || 'Unknown';
+      acc[cls] = (acc[cls] || 0) + Number(s.pendingAmount);
+    }
+    return acc;
+  }, {});
+
+  const pendingDuesDistribution = Object.keys(classDuesMap).length > 0
+    ? Object.keys(classDuesMap).map((key, idx) => ({
+        label: key,
+        value: classDuesMap[key],
+        color: `hsl(${10 + idx * 45}, 80%, 45%)`
+      }))
+    : [{ label: 'All Paid', value: 0, color: 'var(--success)' }];
+
+  // Staff Payouts Allocations by Department
+  const deptSalaryMap = staff.reduce((acc, s) => {
+    const dept = s.department || 'Other';
+    acc[dept] = (acc[dept] || 0) + Number(s.monthlySalary || 0);
+    return acc;
+  }, {});
+
+  const staffPayoutsAllocation = Object.keys(deptSalaryMap).length > 0
+    ? Object.keys(deptSalaryMap).map((key, idx) => ({
+        label: key,
+        value: deptSalaryMap[key],
+        color: `hsl(${120 + idx * 45}, 80%, 45%)`
+      }))
+    : [{ label: 'No Staff', value: 0, color: 'var(--text-tertiary)' }];
+
+  // Grievance/Complaint distribution count by type
   const complaintTypeMap = complaints.reduce((acc, c) => {
     acc[c.complaintType] = (acc[c.complaintType] || 0) + 1;
     return acc;
   }, {});
 
-  const complaintDistribution = Object.keys(complaintTypeMap).map((key, idx) => ({
-    label: key,
-    value: complaintTypeMap[key],
-    color: `hsl(${190 + idx * 45}, 80%, 45%)`
-  }));
+  const complaintDistribution = Object.keys(complaintTypeMap).length > 0
+    ? Object.keys(complaintTypeMap).map((key, idx) => ({
+        label: key,
+        value: complaintTypeMap[key],
+        color: `hsl(${190 + idx * 45}, 80%, 45%)`
+      }))
+    : [{ label: 'No Tickets', value: 0, color: 'var(--text-tertiary)' }];
 
-  // 3. ACTION QUEUES
+  // 4. ACTION QUEUES
   const principalApprovals = appointments.filter(a => 
     a.department === 'Principal' && a.status === 'PENDING'
   );
@@ -99,29 +159,61 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
     c.isEscalated && c.status !== 'Resolved'
   );
 
-  const handleActionClick = (apt, type) => {
-    setSelectedApt(apt);
-    setActionType(type);
-    setResolutionText('');
-    setNewDate('');
-    setNewTime('');
+  // 5. CSV EXPORT UTILITY
+  const handleExportCSV = (data, columns, filename) => {
+    const csvRows = [];
+    csvRows.push(columns.join(','));
+    
+    data.forEach(row => {
+      const values = columns.map(col => {
+        const val = row[col] !== undefined ? row[col] : '';
+        const escaped = ('' + val).replace(/"/g, '""');
+        return `"${escaped}"`;
+      });
+      csvRows.push(values.join(','));
+    });
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${filename}_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const handleConfirmAction = () => {
-    if (actionType === 'approve') {
-      approveAppointment(selectedApt.id, resolutionText, currentUser);
-    } else if (actionType === 'reject') {
-      rejectAppointment(selectedApt.id, resolutionText, currentUser);
-    } else if (actionType === 'reschedule') {
-      if (!newDate || !newTime) return;
-      rescheduleAppointment(selectedApt.id, newDate, newTime, currentUser);
-    }
-    setSelectedApt(null);
-  };
+  // 6. FILTERING LOGICS
+  const filteredStudents = students.filter(s => {
+    const matchesSearch = s.name?.toLowerCase().includes(studentSearch.toLowerCase()) || 
+                          s.id?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+                          s.parentName?.toLowerCase().includes(studentSearch.toLowerCase());
+    const matchesClass = studentClassFilter === '' || s.class === studentClassFilter;
+    const matchesStatus = studentStatusFilter === '' || s.paymentStatus === studentStatusFilter;
+    return matchesSearch && matchesClass && matchesStatus;
+  });
 
-  const handleResolveComplaint = (cmpId, actionText) => {
-    updateComplaintStatus(cmpId, { status: 'Resolved', actionTaken: actionText }, currentUser);
-  };
+  const filteredStaff = staff.filter(t => {
+    const matchesSearch = t.name?.toLowerCase().includes(staffSearch.toLowerCase()) ||
+                          t.id?.toLowerCase().includes(staffSearch.toLowerCase()) ||
+                          t.designation?.toLowerCase().includes(staffSearch.toLowerCase());
+    const matchesDept = staffDeptFilter === '' || t.department === staffDeptFilter;
+    const matchesStatus = staffStatusFilter === '' || t.paymentStatus === staffStatusFilter;
+    return matchesSearch && matchesDept && matchesStatus;
+  });
+
+  const filteredPayments = payments.filter(p => {
+    const matchesSearch = p.userName?.toLowerCase().includes(paymentSearch.toLowerCase()) ||
+                          p.id?.toLowerCase().includes(paymentSearch.toLowerCase()) ||
+                          p.transactionId?.toLowerCase().includes(paymentSearch.toLowerCase());
+    const matchesType = paymentTypeFilter === '' || p.paymentType === paymentTypeFilter;
+    return matchesSearch && matchesType;
+  });
+
+  // Extract unique filter keys
+  const uniqueClasses = Array.from(new Set(students.map(s => s.class).filter(Boolean)));
+  const uniqueDepts = Array.from(new Set(staff.map(t => t.department).filter(Boolean)));
+  const uniquePayTypes = Array.from(new Set(payments.map(p => p.paymentType).filter(Boolean)));
 
   return (
     <div className="dashboard-viewport">
@@ -130,43 +222,78 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
 
       {/* Main Section Navigation Tabs */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: '24px', gap: '8px', overflowX: 'auto' }}>
-        {['overview', 'approvals', 'escalations', 'audits'].map(tab => (
+        {[
+          { key: 'overview', label: 'Executive Overview' },
+          { key: 'approvals', label: 'Appointments Queue' },
+          { key: 'escalations', label: 'Escalation Queue' },
+          { key: 'students', label: 'Student Billing Roster' },
+          { key: 'staff', label: 'Staff Salary Registry' },
+          { key: 'payments', label: 'Transaction Logs' },
+          { key: 'audits', label: 'Security Audit logs' }
+        ].map(tab => (
           <button
-            key={tab}
-            className={`btn`}
+            key={tab.key}
+            className="btn"
             style={{
               background: 'none',
               border: 'none',
-              borderBottom: activeTab === tab ? '2.5px solid var(--primary-light)' : 'none',
-              color: activeTab === tab ? 'var(--primary-light)' : 'var(--text-secondary)',
+              borderBottom: activeTab === tab.key ? '2.5px solid var(--primary-light)' : 'none',
+              color: activeTab === tab.key ? 'var(--primary-light)' : 'var(--text-secondary)',
               borderRadius: '0',
               padding: '10px 16px',
               fontWeight: '700',
-              fontSize: '14px',
-              textTransform: 'capitalize'
+              fontSize: '13px',
+              textTransform: 'capitalize',
+              whiteSpace: 'nowrap'
             }}
             onClick={() => {
-              setActiveTab(tab);
+              setActiveTab(tab.key);
               if (setActiveSection) {
-                if (tab === 'overview') setActiveSection('dashboard');
-                else if (tab === 'approvals') setActiveSection('appointments');
-                else if (tab === 'escalations') setActiveSection('complaints');
-                else if (tab === 'audits') setActiveSection('dashboard');
+                if (tab.key === 'overview') setActiveSection('dashboard');
+                else if (tab.key === 'approvals') setActiveSection('appointments');
+                else if (tab.key === 'escalations') setActiveSection('complaints');
+                else if (tab.key === 'audits') setActiveSection('dashboard');
               }
             }}
           >
-            {tab === 'audits' ? 'Security Audit Logs' : tab}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* A. OVERVIEW PANEL */}
+      {/* A. EXECTUTIVE OVERVIEW PANEL */}
       {activeTab === 'overview' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Charts Row */}
-          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-            <TrendLineChart data={trendData} title="Monthly Intake Analytics" />
-            <DonutChart data={complaintDistribution} title="Lodge Complaint Metrics" />
+          {/* Executive Real-time Financial Card Deck */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            <div className="glass-panel" style={{ padding: '20px', borderLeft: '4px solid var(--success)', background: 'linear-gradient(to right, rgba(16, 185, 129, 0.05), transparent)' }}>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>Total Fee Revenues Collected</p>
+              <h2 style={{ fontSize: '26px', fontWeight: '800', margin: '8px 0 4px 0', color: 'var(--success)' }}>${totalFeesCollected.toLocaleString()}</h2>
+              <p style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>Summed from live payment processing triggers</p>
+            </div>
+            
+            <div className="glass-panel" style={{ padding: '20px', borderLeft: '4px solid var(--primary-light)', background: 'linear-gradient(to right, rgba(99, 102, 241, 0.05), transparent)' }}>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>Total Staff Salary Disbursed</p>
+              <h2 style={{ fontSize: '26px', fontWeight: '800', margin: '8px 0 4px 0', color: 'var(--primary-light)' }}>${totalSalariesPaid.toLocaleString()}</h2>
+              <p style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>Salaries credited with secure voucher transactions</p>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '20px', borderLeft: '4px solid var(--danger)', background: 'linear-gradient(to right, rgba(239, 68, 68, 0.05), transparent)' }}>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '700', letterSpacing: '0.05em' }}>Outstanding Tuition & Bus Dues</p>
+              <h2 style={{ fontSize: '26px', fontWeight: '800', margin: '8px 0 4px 0', color: 'var(--danger)' }}>${totalOutstandingDues.toLocaleString()}</h2>
+              <p style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>Pending monthly sweeps and active reminders</p>
+            </div>
+          </div>
+
+          {/* Charts Rows */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px' }}>
+            <TrendLineChart data={trendData} title="Monthly Intake Analytics (Fee Collection Trends)" />
+            <DonutChart data={pendingDuesDistribution} title="Outstanding Billing Dues Distribution by Class" />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px' }}>
+            <DonutChart data={staffPayoutsAllocation} title="Staff Salary Overheads Allocation by Dept" />
+            <DonutChart data={complaintDistribution} title="Lodge Complaint Category Metrics" />
           </div>
 
           {/* Quick Tasks Grid */}
@@ -206,7 +333,7 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
                         style={{ padding: '4px 8px', fontSize: '11px' }}
                         onClick={() => setActiveTab('approvals')}
                       >
-                        Approve Queue
+                        Inspect Queue
                       </button>
                     </div>
                   ))}
@@ -249,7 +376,7 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
                         style={{ padding: '4px 8px', fontSize: '11px' }}
                         onClick={() => setActiveTab('escalations')}
                       >
-                        Intervene
+                        Inspect
                       </button>
                     </div>
                   ))}
@@ -260,144 +387,453 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
         </div>
       )}
 
-      {/* B. APPROVALS TAB */}
+      {/* B. APPROVALS TAB (Lockdown View-Only) */}
       {activeTab === 'approvals' && (
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px' }}>Principal Appointments Pending Queue</h3>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Booking ID</th>
-                  <th>Requester</th>
-                  <th>Role</th>
-                  <th>DateTime Slot</th>
-                  <th>Purpose</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {principalApprovals.length === 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass-panel" style={{ padding: '14px 20px', borderLeft: '5px solid var(--warning)', display: 'flex', alignItems: 'center', gap: '12px', background: 'linear-gradient(to right, rgba(245, 158, 11, 0.06), transparent)' }}>
+            <Lock size={18} style={{ color: 'var(--warning)', flexShrink: 0 }} />
+            <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+              <strong>READ-ONLY GATEWAY ACTIVE:</strong> As Principal, your workspace is configured for view-only report monitoring. Direct modification of appointment tickets is locked on this role.
+            </div>
+          </div>
+
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px' }}>Principal Appointments Pending Queue</h3>
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
-                      No pending consultations. All caught up!
-                    </td>
+                    <th>Booking ID</th>
+                    <th>Requester</th>
+                    <th>Role</th>
+                    <th>DateTime Slot</th>
+                    <th>Purpose</th>
+                    <th>Access State</th>
                   </tr>
-                ) : (
-                  principalApprovals.map(apt => (
-                    <tr key={apt.id}>
-                      <td style={{ fontWeight: '700' }}>{apt.id}</td>
-                      <td>{apt.userName}</td>
-                      <td>{apt.userRole}</td>
-                      <td>
-                        <div style={{ fontSize: '13px', fontWeight: '600' }}>{apt.date}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{apt.time}</div>
-                      </td>
-                      <td style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={apt.purpose}>
-                        {apt.purpose}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ padding: '6px 10px', fontSize: '11px', color: 'var(--success)', borderColor: 'var(--success)' }}
-                            onClick={() => handleActionClick(apt, 'approve')}
-                          >
-                            <Check size={12} />
-                            Approve
-                          </button>
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ padding: '6px 10px', fontSize: '11px', color: 'var(--warning)', borderColor: 'var(--warning)' }}
-                            onClick={() => handleActionClick(apt, 'reschedule')}
-                          >
-                            <RefreshCw size={12} />
-                            Reschedule
-                          </button>
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ padding: '6px 10px', fontSize: '11px', color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                            onClick={() => handleActionClick(apt, 'reject')}
-                          >
-                            <X size={12} />
-                            Decline
-                          </button>
-                        </div>
+                </thead>
+                <tbody>
+                  {principalApprovals.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
+                        No pending consultations. All caught up!
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    principalApprovals.map(apt => (
+                      <tr key={apt.id}>
+                        <td style={{ fontWeight: '700' }}>{apt.id}</td>
+                        <td>{apt.userName}</td>
+                        <td>{apt.userRole}</td>
+                        <td>
+                          <div style={{ fontSize: '13px', fontWeight: '600' }}>{apt.date}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{apt.time}</div>
+                        </td>
+                        <td style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={apt.purpose}>
+                          {apt.purpose}
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Lock size={12} /> Closed (Read Only)
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
 
-      {/* C. ESCALATIONS TAB */}
+      {/* C. ESCALATIONS TAB (Lockdown View-Only) */}
       {activeTab === 'escalations' && (
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px' }}>Critical Disciplinary Escalation Queue</h3>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Ticket ID</th>
-                  <th>Submitted By</th>
-                  <th>Complaint Category</th>
-                  <th>Description</th>
-                  <th>Date Logged</th>
-                  <th>Executive Remarks & Resolution</th>
-                </tr>
-              </thead>
-              <tbody>
-                {escalatedComplaintsList.length === 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass-panel" style={{ padding: '14px 20px', borderLeft: '5px solid var(--warning)', display: 'flex', alignItems: 'center', gap: '12px', background: 'linear-gradient(to right, rgba(245, 158, 11, 0.06), transparent)' }}>
+            <Lock size={18} style={{ color: 'var(--warning)', flexShrink: 0 }} />
+            <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+              <strong>READ-ONLY GRIEVANCE OVERVIEW:</strong> Disciplinary ticket modifications, resolution overrides, and action inputs are restricted. Access is strictly report audit only.
+            </div>
+          </div>
+
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px' }}>Critical Disciplinary Escalation Queue</h3>
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
                   <tr>
-                    <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
-                      No escalated disciplinary concerns currently pending.
-                    </td>
+                    <th>Ticket ID</th>
+                    <th>Submitted By</th>
+                    <th>Complaint Category</th>
+                    <th>Description</th>
+                    <th>Date Logged</th>
+                    <th>Resolution Status</th>
                   </tr>
-                ) : (
-                  escalatedComplaintsList.map(cmp => (
-                    <tr key={cmp.id}>
-                      <td style={{ fontWeight: '700', color: 'var(--danger)' }}>{cmp.id}</td>
-                      <td>{cmp.submittedBy} ({cmp.role})</td>
-                      <td>
-                        <span className="priority-tag urgent">{cmp.complaintType}</span>
+                </thead>
+                <tbody>
+                  {escalatedComplaintsList.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
+                        No escalated disciplinary concerns currently pending.
                       </td>
-                      <td style={{ maxWidth: '300px', fontSize: '12px' }}>{cmp.description}</td>
-                      <td>{new Date(cmp.date).toLocaleDateString()}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    </tr>
+                  ) : (
+                    escalatedComplaintsList.map(cmp => (
+                      <tr key={cmp.id}>
+                        <td style={{ fontWeight: '700', color: 'var(--danger)' }}>{cmp.id}</td>
+                        <td>{cmp.submittedBy} ({cmp.role})</td>
+                        <td>
+                          <span className="priority-tag urgent">{cmp.complaintType}</span>
+                        </td>
+                        <td style={{ maxWidth: '300px', fontSize: '12px' }}>{cmp.description}</td>
+                        <td>{new Date(cmp.date).toLocaleDateString()}</td>
+                        <td>
                           <input 
                             type="text" 
                             className="filter-input" 
-                            style={{ flex: 1, padding: '6px 12px' }}
-                            placeholder="Add action taken..."
-                            id={`action-${cmp.id}`}
+                            disabled={true}
+                            style={{ padding: '6px 12px', width: '150px', backgroundColor: 'var(--bg-tertiary)', border: '1px dashed var(--border-color)', cursor: 'not-allowed' }}
+                            placeholder="Write blocked..."
                           />
                           <button 
-                            className="btn btn-primary" 
-                            style={{ padding: '6px 12px', fontSize: '12px' }}
-                            onClick={() => {
-                              const inputVal = document.getElementById(`action-${cmp.id}`).value;
-                              if (!inputVal) return;
-                              handleResolveComplaint(cmp.id, inputVal);
-                            }}
+                            className="btn btn-secondary" 
+                            disabled={true}
+                            style={{ marginLeft: '6px', padding: '6px 12px', fontSize: '11px', cursor: 'not-allowed', opacity: 0.6 }}
                           >
-                            Resolve Ticket
+                            Locked
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
 
-      {/* D. AUDIT LOGS TAB */}
+      {/* D. READ-ONLY STUDENT ROSTER TAB */}
+      {activeTab === 'students' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '700' }}>Student Fee & Financial Ledger</h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Secure view-only roster of registered students, parents, and outstanding balances.</p>
+              </div>
+              <button 
+                className="btn btn-primary" 
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => handleExportCSV(
+                  filteredStudents, 
+                  ['id', 'name', 'class', 'rollNumber', 'parentName', 'parentEmail', 'parentContact', 'monthlyTuitionFee', 'busFee', 'totalMonthlyFee', 'paidAmount', 'pendingAmount', 'paymentStatus'], 
+                  'student_ledger'
+                )}
+              >
+                <Download size={14} />
+                Export Ledger (CSV)
+              </button>
+            </div>
+
+            {/* Filter Suite */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+              <div style={{ flex: 1, minWidth: '200px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0 12px' }}>
+                <Search size={14} style={{ color: 'var(--text-tertiary)' }} />
+                <input 
+                  type="text" 
+                  style={{ border: 'none', background: 'none', outline: 'none', padding: '10px 0', fontSize: '13px', width: '100%' }}
+                  placeholder="Search by ID, name, or parent..."
+                  value={studentSearch}
+                  onChange={e => setStudentSearch(e.target.value)}
+                />
+              </div>
+
+              <select 
+                className="filter-input" 
+                style={{ width: '150px' }}
+                value={studentClassFilter}
+                onChange={e => setStudentClassFilter(e.target.value)}
+              >
+                <option value="">All Classes</option>
+                {uniqueClasses.map(cls => <option key={cls} value={cls}>{cls}</option>)}
+              </select>
+
+              <select 
+                className="filter-input" 
+                style={{ width: '150px' }}
+                value={studentStatusFilter}
+                onChange={e => setStudentStatusFilter(e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="Paid">Paid</option>
+                <option value="Partial">Partial</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+
+            {/* Roster Table */}
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Student ID</th>
+                    <th>Full Name</th>
+                    <th>Grade / Class</th>
+                    <th>Roll No</th>
+                    <th>Parent Name</th>
+                    <th>Parent Contact</th>
+                    <th>Tuition Fee ($)</th>
+                    <th>Bus Fee ($)</th>
+                    <th>Total Fee ($)</th>
+                    <th>Paid ($)</th>
+                    <th>Pending ($)</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStudents.length === 0 ? (
+                    <tr>
+                      <td colSpan="12" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
+                        No students match search filters.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredStudents.map(std => (
+                      <tr key={std.id}>
+                        <td style={{ fontWeight: '700' }}>{std.id}</td>
+                        <td style={{ fontWeight: '600' }}>{std.name}</td>
+                        <td>{std.class}</td>
+                        <td style={{ fontFamily: 'monospace' }}>{std.rollNumber}</td>
+                        <td>{std.parentName}</td>
+                        <td>{std.parentContact || '—'}</td>
+                        <td>${std.monthlyTuitionFee}</td>
+                        <td>${std.busFee}</td>
+                        <td style={{ fontWeight: '700' }}>${std.totalMonthlyFee}</td>
+                        <td style={{ color: 'var(--success)', fontWeight: '600' }}>${std.paidAmount || 0}</td>
+                        <td style={{ color: 'var(--danger)', fontWeight: '600' }}>${std.pendingAmount || 0}</td>
+                        <td>
+                          <span className={`status-badge ${std.paymentStatus?.toLowerCase() || 'pending'}`}>
+                            {std.paymentStatus || 'Pending'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* E. READ-ONLY STAFF REGISTRY TAB */}
+      {activeTab === 'staff' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '700' }}>Staff Registry & Payroll Registry</h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>View salary overhead contracts, current disbursements status, and contact registries.</p>
+              </div>
+              <button 
+                className="btn btn-primary" 
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => handleExportCSV(
+                  filteredStaff, 
+                  ['id', 'name', 'role', 'phone', 'email', 'designation', 'department', 'monthlySalary', 'paidSalary', 'remainingSalary', 'paymentDate', 'paymentStatus'], 
+                  'staff_registry'
+                )}
+              >
+                <Download size={14} />
+                Export Staff (CSV)
+              </button>
+            </div>
+
+            {/* Filter Suite */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+              <div style={{ flex: 1, minWidth: '200px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0 12px' }}>
+                <Search size={14} style={{ color: 'var(--text-tertiary)' }} />
+                <input 
+                  type="text" 
+                  style={{ border: 'none', background: 'none', outline: 'none', padding: '10px 0', fontSize: '13px', width: '100%' }}
+                  placeholder="Search by ID, name, or designation..."
+                  value={staffSearch}
+                  onChange={e => setStaffSearch(e.target.value)}
+                />
+              </div>
+
+              <select 
+                className="filter-input" 
+                style={{ width: '150px' }}
+                value={staffDeptFilter}
+                onChange={e => setStaffDeptFilter(e.target.value)}
+              >
+                <option value="">All Departments</option>
+                {uniqueDepts.map(dept => <option key={dept} value={dept}>{dept}</option>)}
+              </select>
+
+              <select 
+                className="filter-input" 
+                style={{ width: '150px' }}
+                value={staffStatusFilter}
+                onChange={e => setStaffStatusFilter(e.target.value)}
+              >
+                <option value="">All Statuses</option>
+                <option value="Paid">Paid</option>
+                <option value="Partial">Partial</option>
+                <option value="Pending">Pending</option>
+              </select>
+            </div>
+
+            {/* Staff Registry Table */}
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Staff ID</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Designation</th>
+                    <th>Department</th>
+                    <th>Phone</th>
+                    <th>Monthly Salary</th>
+                    <th>Paid ($)</th>
+                    <th>Remaining ($)</th>
+                    <th>Payment Date</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStaff.length === 0 ? (
+                    <tr>
+                      <td colSpan="11" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
+                        No staff matching search criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredStaff.map(t => (
+                      <tr key={t.id}>
+                        <td style={{ fontWeight: '700' }}>{t.id}</td>
+                        <td style={{ fontWeight: '600' }}>{t.name}</td>
+                        <td>{t.role}</td>
+                        <td>{t.designation}</td>
+                        <td>{t.department}</td>
+                        <td>{t.phone || '—'}</td>
+                        <td style={{ fontWeight: '600' }}>${t.monthlySalary}</td>
+                        <td style={{ color: 'var(--success)', fontWeight: '600' }}>${t.paidSalary || 0}</td>
+                        <td style={{ color: 'var(--danger)', fontWeight: '600' }}>${t.remainingSalary || 0}</td>
+                        <td>{t.paymentDate || '—'}</td>
+                        <td>
+                          <span className={`status-badge ${t.paymentStatus?.toLowerCase() || 'pending'}`}>
+                            {t.paymentStatus || 'Pending'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* F. READ-ONLY TRANSACTION LOGS TAB */}
+      {activeTab === 'payments' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="glass-panel" style={{ padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '700' }}>Live Transaction Auditing</h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Full read-only ledger of payments received and salaries disbursed.</p>
+              </div>
+              <button 
+                className="btn btn-primary" 
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                onClick={() => handleExportCSV(
+                  filteredPayments, 
+                  ['id', 'userName', 'role', 'paymentType', 'amount', 'date', 'status', 'transactionId'], 
+                  'financial_transactions'
+                )}
+              >
+                <Download size={14} />
+                Export Ledger (CSV)
+              </button>
+            </div>
+
+            {/* Filter Suite */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '20px' }}>
+              <div style={{ flex: 1, minWidth: '200px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '0 12px' }}>
+                <Search size={14} style={{ color: 'var(--text-tertiary)' }} />
+                <input 
+                  type="text" 
+                  style={{ border: 'none', background: 'none', outline: 'none', padding: '10px 0', fontSize: '13px', width: '100%' }}
+                  placeholder="Search by ID, name, or gateway ID..."
+                  value={paymentSearch}
+                  onChange={e => setPaymentSearch(e.target.value)}
+                />
+              </div>
+
+              <select 
+                className="filter-input" 
+                style={{ width: '180px' }}
+                value={paymentTypeFilter}
+                onChange={e => setPaymentTypeFilter(e.target.value)}
+              >
+                <option value="">All Payment Types</option>
+                {uniquePayTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            {/* Payments Table */}
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Payment ID</th>
+                    <th>User Name</th>
+                    <th>User Role</th>
+                    <th>Transaction Category</th>
+                    <th>Amount ($)</th>
+                    <th>Date Logged</th>
+                    <th>Clearing Status</th>
+                    <th>Gateway reference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPayments.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
+                        No transactions recorded matching search.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredPayments.map(p => (
+                      <tr key={p.id}>
+                        <td style={{ fontWeight: '700' }}>{p.id}</td>
+                        <td style={{ fontWeight: '600' }}>{p.userName}</td>
+                        <td>{p.role}</td>
+                        <td style={{ fontWeight: '600', color: 'var(--primary-light)' }}>{p.paymentType}</td>
+                        <td style={{ fontWeight: '700' }}>${p.amount}</td>
+                        <td>{p.date}</td>
+                        <td>
+                          <span className="status-badge approved">
+                            {p.status}
+                          </span>
+                        </td>
+                        <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{p.transactionId}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* G. AUDIT LOGS TAB */}
       {activeTab === 'audits' && (
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -408,7 +844,7 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
           </div>
 
           <div className="audit-timeline">
-            {auditLogs.slice(0, 10).map(log => (
+            {auditLogs.slice(0, 15).map(log => (
               <div key={log.id} className="audit-timeline-item">
                 <div className="audit-timeline-icon">
                   <ShieldAlert size={16} />
@@ -426,67 +862,6 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
           </div>
         </div>
       )}
-
-      {/* UNIVERSAL MODAL POPUPS */}
-      <Modal
-        isOpen={selectedApt !== null}
-        onClose={() => setSelectedApt(null)}
-        title={actionType === 'reschedule' ? 'Reschedule Appointment Slot' : 'Confirm Action'}
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={() => setSelectedApt(null)}>Cancel</button>
-            <button className="btn btn-primary" onClick={handleConfirmAction}>Confirm Update</button>
-          </>
-        }
-      >
-        {selectedApt && (
-          <div>
-            <p style={{ fontSize: '14px', marginBottom: '12px' }}>
-              Updating appointment ticket <strong>{selectedApt.id}</strong> requested by {selectedApt.userName}.
-            </p>
-
-            {actionType === 'reschedule' ? (
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>New Available Date</label>
-                  <input 
-                    type="date" 
-                    className="form-input"
-                    value={newDate}
-                    onChange={e => setNewDate(e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>New Time Slot</label>
-                  <select 
-                    className="filter-input"
-                    value={newTime}
-                    onChange={e => setNewTime(e.target.value)}
-                  >
-                    <option value="">Select slot</option>
-                    <option value="09:00 AM">09:00 AM</option>
-                    <option value="10:00 AM">10:00 AM</option>
-                    <option value="11:00 AM">11:00 AM</option>
-                    <option value="02:00 PM">02:00 PM</option>
-                    <option value="03:00 PM">03:00 PM</option>
-                  </select>
-                </div>
-              </div>
-            ) : (
-              <div className="form-group">
-                <label>Resolution Remarks / Internal Notes</label>
-                <textarea 
-                  className="form-input" 
-                  style={{ minHeight: '80px', resize: 'vertical' }}
-                  placeholder="e.g. Schedule verified. Ready to review scholarship forms."
-                  value={resolutionText}
-                  onChange={e => setResolutionText(e.target.value)}
-                />
-              </div>
-            )}
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };

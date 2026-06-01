@@ -597,3 +597,450 @@
   font-size: 12px;
   color: var(--text-secondary);
 }
+
+/* 8. VIRTUAL ID CARD GENERATOR DESK */
+
+/* 3D Card Flip Animation & Container */
+.id-card-stage {
+  perspective: 1000px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-lg);
+  border: 1px dashed var(--border-color);
+  min-height: 520px;
+}
+
+.id-card-flipper {
+  width: 320px;
+  height: 500px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.id-card-flipper.flipped {
+  transform: rotateY(180deg);
+}
+
+/* Card Face base styling */
+.id-card-front, .id-card-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
+}
+
+.id-card-back {
+  transform: rotateY(180deg);
+}
+
+/* Theme A: Glassmorphism VIP */
+.theme-glassmorphism {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: var(--text-primary);
+}
+
+.theme-glassmorphism::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  left: -40px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.theme-glassmorphism::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Theme B: Cyberpunk Neon */
+.theme-cyberpunk {
+  background: #090b0f;
+  border: 2px solid #ff0055 !important;
+  color: #00f0ff;
+  box-shadow: 0 0 20px rgba(255, 0, 85, 0.3);
+}
+
+.theme-cyberpunk .id-header {
+  border-bottom: 2px solid #00f0ff;
+  background: rgba(0, 240, 255, 0.08);
+}
+
+.theme-cyberpunk .id-photo-frame {
+  border: 2px solid #00f0ff;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+  border-radius: 8px; /* Cyberpunk blocky look */
+}
+
+.theme-cyberpunk .id-role-badge {
+  background-color: rgba(255, 0, 85, 0.15);
+  color: #ff0055;
+  border: 1px solid #ff0055;
+  border-radius: 4px;
+}
+
+/* Theme C: Academic Gold */
+.theme-academic {
+  background: linear-gradient(135deg, #0b1329 0%, #1c2541 100%);
+  border: 2.5px solid #d97706 !important;
+  color: #f8fafc;
+}
+
+.theme-academic .id-header {
+  background-color: rgba(217, 119, 6, 0.08);
+  border-bottom: 2px solid #d97706;
+}
+
+.theme-academic .id-role-badge {
+  border: 1px solid #d97706;
+  color: #d97706;
+  background-color: rgba(217, 119, 6, 0.1);
+}
+
+/* Card Elements Layout */
+.id-header {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+  z-index: 10;
+  position: relative;
+}
+
+.id-header h4 {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 0;
+}
+
+.id-header p {
+  font-size: 9px;
+  opacity: 0.8;
+  margin: 2px 0 0 0;
+  letter-spacing: 0.5px;
+}
+
+.id-body {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+
+.id-photo-frame {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+  margin-bottom: 12px;
+  position: relative;
+  background-color: rgba(255,255,255,0.05);
+}
+
+.id-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.id-name {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 4px;
+  text-align: center;
+  letter-spacing: 0.2px;
+}
+
+.id-role-badge {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2.5px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.8px;
+}
+
+.id-details-list {
+  width: 100%;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 10px;
+}
+
+.id-detail-row {
+  display: flex;
+  justify-content: space-between;
+  line-height: 1.4;
+}
+
+.id-detail-row span:first-child {
+  opacity: 0.65;
+}
+
+.id-detail-row span:last-child {
+  font-weight: 700;
+}
+
+.id-chip-holo {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 22px;
+  background: linear-gradient(135deg, #ffe082 0%, #ca8a04 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0,0,0,0.12);
+  opacity: 0.85;
+}
+
+.id-barcode-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.id-barcode-svg {
+  width: 80%;
+  height: 24px;
+  stroke: currentColor;
+}
+
+.id-barcode-num {
+  font-family: monospace;
+  font-size: 9px;
+  margin-top: 3px;
+  letter-spacing: 2px;
+}
+
+/* ID Card Back Styling */
+.id-back-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  font-size: 11px;
+  position: relative;
+  z-index: 10;
+}
+
+.id-back-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.id-back-title {
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 9.5px;
+  letter-spacing: 0.8px;
+  opacity: 0.85;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 3px;
+  margin-bottom: 2px;
+}
+
+.id-terms-text {
+  font-size: 8.5px;
+  line-height: 1.4;
+  opacity: 0.7;
+}
+
+.id-qr-sign-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 12px;
+}
+
+.id-qr-box {
+  width: 64px;
+  height: 64px;
+  background-color: white;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.id-signature-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.id-signature-img {
+  width: 80px;
+  height: 30px;
+  object-fit: contain;
+  opacity: 0.85;
+  filter: invert(1) brightness(2); /* make signature white */
+}
+
+/* Horizontal / Landscape Layout Overrides */
+.id-card-flipper.landscape {
+  width: 480px;
+  height: 300px;
+}
+
+.id-card-flipper.landscape .id-card-front, 
+.id-card-flipper.landscape .id-card-back {
+  flex-direction: row;
+}
+
+.id-card-flipper.landscape .id-header {
+  width: 150px;
+  height: 100%;
+  border-bottom: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  justify-content: center;
+  padding: 10px;
+}
+
+.id-card-flipper.landscape .id-body {
+  padding: 14px 18px;
+}
+
+.id-card-flipper.landscape .id-photo-frame {
+  margin-bottom: 8px;
+  width: 80px;
+  height: 80px;
+}
+
+.id-card-flipper.landscape .id-back-content {
+  flex-direction: row;
+  width: 100%;
+  padding: 16px;
+}
+
+.id-card-flipper.landscape .id-back-left {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.id-card-flipper.landscape .id-back-right {
+  flex: 0.8;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  padding-left: 12px;
+}
+
+.id-card-flipper.landscape .id-qr-sign-row {
+  flex-direction: column;
+  align-items: flex-end;
+  margin-top: 0;
+  gap: 12px;
+  width: 100%;
+}
+
+/* PRINTING MEDIA QUERY OVERRIDES */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  #printable-id-card-area, #printable-id-card-area * {
+    visibility: visible;
+  }
+  
+  #printable-id-card-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    gap: 30px !important;
+    padding: 40px 0 !important;
+    background: white !important;
+  }
+
+  .id-card-flipper {
+    transform: none !important;
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Force background colors during printing */
+  .theme-glassmorphism {
+    background: #f8fafc !important;
+    color: #000 !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  
+  .theme-cyberpunk {
+    background: #111 !important;
+    color: #ff0055 !important;
+    border: 2px solid #ff0055 !important;
+  }
+  
+  .theme-academic {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 2px solid #d97706 !important;
+  }
+
+  .id-signature-img {
+    filter: none !important; /* Keep original color */
+  }
+  
+  .id-qr-box {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+}

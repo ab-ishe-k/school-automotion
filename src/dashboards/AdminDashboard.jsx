@@ -33,7 +33,8 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
     registerTeacher,
     updateQueryStatus,
     updateComplaintStatus,
-    escalateComplaint
+    escalateComplaint,
+    runDuesReminderLoop
   } = useDatabase();
   const { currentUser } = useAuth();
 
@@ -70,12 +71,21 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
   const [stdEmail, setStdEmail] = useState('');
   const [stdClass, setStdClass] = useState('Grade 11-A');
   const [stdRoute, setStdRoute] = useState('None');
+  const [parentName, setParentName] = useState('');
+  const [parentEmail, setParentEmail] = useState('');
+  const [parentContact, setParentContact] = useState('');
+  const [tuitionFee, setTuitionFee] = useState('2000');
+  const [busFee, setBusFee] = useState('500');
+  const [rollNum, setRollNum] = useState('');
 
   // Teacher Recruitment Form states
   const [tchName, setTchName] = useState('');
   const [tchEmail, setTchEmail] = useState('');
   const [tchDept, setTchDept] = useState('Math Dept');
   const [tchSalary, setTchSalary] = useState('4500');
+  const [tchDesignation, setTchDesignation] = useState('Mathematics Instructor');
+  const [tchPhone, setTchPhone] = useState('');
+  const [tchRole, setTchRole] = useState('Teacher');
 
   // 1. STATS SUMMARY
   const stats = {
@@ -156,12 +166,24 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
       name: stdName,
       email: stdEmail,
       class: stdClass,
-      busRoute: stdRoute
+      busRoute: stdRoute,
+      parentName,
+      parentEmail,
+      parentContact,
+      monthlyTuitionFee: Number(tuitionFee),
+      busFee: Number(busFee),
+      rollNumber: rollNum
     }, currentUser);
 
     setStdName('');
     setStdEmail('');
     setStdRoute('None');
+    setParentName('');
+    setParentEmail('');
+    setParentContact('');
+    setTuitionFee('2000');
+    setBusFee('500');
+    setRollNum('');
     setActiveTab('database');
     setActiveSheet('students');
   };
@@ -173,12 +195,18 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
       name: tchName,
       email: tchEmail,
       department: tchDept,
-      salary: tchSalary
+      salary: tchSalary,
+      designation: tchDesignation,
+      phone: tchPhone,
+      role: tchRole
     }, currentUser);
 
     setTchName('');
     setTchEmail('');
     setTchSalary('4500');
+    setTchDesignation('Mathematics Instructor');
+    setTchPhone('');
+    setTchRole('Teacher');
     setActiveTab('database');
     setActiveSheet('staff');
   };
@@ -613,16 +641,89 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 />
               </div>
 
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+                <div className="form-group">
+                  <label>Email Address</label>
+                  <input 
+                    type="email" 
+                    className="form-input" 
+                    placeholder="e.g. liam@beacon.edu"
+                    value={stdEmail}
+                    onChange={e => setStdEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Student Roll Number</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. 12"
+                    value={rollNum}
+                    onChange={e => setRollNum(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+                <div className="form-group">
+                  <label>Parent Full Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. Sarah Smith"
+                    value={parentName}
+                    onChange={e => setParentName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Parent Contact Phone</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. 555-012-9988"
+                    value={parentContact}
+                    onChange={e => setParentContact(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
-                <label>Email Address</label>
+                <label>Parent Contact Email</label>
                 <input 
                   type="email" 
                   className="form-input" 
-                  placeholder="e.g. liam@beacon.edu"
-                  value={stdEmail}
-                  onChange={e => setStdEmail(e.target.value)}
+                  placeholder="e.g. sarah.smith@school.edu"
+                  value={parentEmail}
+                  onChange={e => setParentEmail(e.target.value)}
                   required
                 />
+              </div>
+
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className="form-group">
+                  <label>Monthly Tuition Fee ($)</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    value={tuitionFee}
+                    onChange={e => setTuitionFee(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Monthly Bus Fee ($)</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    value={busFee}
+                    onChange={e => setBusFee(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <div className="form-grid">
@@ -672,19 +773,55 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Contract Email Account</label>
-                <input 
-                  type="email" 
-                  className="form-input" 
-                  placeholder="e.g. davis@school.edu"
-                  value={tchEmail}
-                  onChange={e => setTchEmail(e.target.value)}
-                  required
-                />
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+                <div className="form-group">
+                  <label>Contract Email Account</label>
+                  <input 
+                    type="email" 
+                    className="form-input" 
+                    placeholder="e.g. davis@school.edu"
+                    value={tchEmail}
+                    onChange={e => setTchEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Phone Number</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. 555-018-4431"
+                    value={tchPhone}
+                    onChange={e => setTchPhone(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
-              <div className="form-grid">
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className="form-group">
+                  <label>Specific Designation</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. Math Instructor"
+                    value={tchDesignation}
+                    onChange={e => setTchDesignation(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Employment Role</label>
+                  <select className="filter-input" value={tchRole} onChange={e => setTchRole(e.target.value)}>
+                    <option value="Teacher">Teacher (Advisor)</option>
+                    <option value="Admin Staff">Admin Staff</option>
+                    <option value="Vice Principal">Vice Principal</option>
+                    <option value="Principal">Principal</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div className="form-group">
                   <label>Faculty Advisory Dept</label>
                   <select className="filter-input" value={tchDept} onChange={e => setTchDept(e.target.value)}>
@@ -692,6 +829,8 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                     <option value="Physics Dept">Physics Dept</option>
                     <option value="English Dept">English Dept</option>
                     <option value="Accounts Dept">Accounts Office</option>
+                    <option value="Principal Office">Principal Office</option>
+                    <option value="VP Office">VP Office</option>
                   </select>
                 </div>
 
@@ -723,7 +862,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
             Control global application properties, synchronization intervals, or perform database refreshes.
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '400px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', maxWidth: '800px' }}>
             <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', backgroundColor: 'var(--bg-tertiary)' }}>
               <h4 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: 'var(--danger)' }}>Database Hard Reset</h4>
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
@@ -732,6 +871,21 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
               <button className="btn btn-danger" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '12px' }} onClick={handleResetDatabase}>
                 <RotateCcw size={14} />
                 Restore Default Databases
+              </button>
+            </div>
+
+            <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', backgroundColor: 'var(--bg-tertiary)' }}>
+              <h4 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: 'var(--primary-light)' }}>Parent Fee Notification Loop</h4>
+              <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                Simulate the automated 7-day recurring email dues reminder sweep. The system will dispatch warnings to parents of students with outstanding balances.
+              </p>
+              <button 
+                className="btn btn-primary" 
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', fontSize: '12px' }} 
+                onClick={() => runDuesReminderLoop(currentUser)}
+              >
+                <AlertOctagon size={14} />
+                Execute 7-Day Reminder Loop
               </button>
             </div>
           </div>
