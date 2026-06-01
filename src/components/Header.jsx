@@ -8,13 +8,12 @@ import {
   Moon, 
   CheckCheck, 
   AlertCircle,
-  Clock,
   Sparkles
 } from 'lucide-react';
 
 const Header = ({ toggleSidebar, theme, setTheme }) => {
-  const { currentUser, forceSessionExpire } = useAuth();
-  const { notifications, pushNotification } = useDatabase();
+  const { currentUser } = useAuth();
+  const { notifications, pushNotification, markAllNotificationsRead } = useDatabase();
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -48,16 +47,6 @@ const Header = ({ toggleSidebar, theme, setTheme }) => {
       </div>
 
       <div className="header-right">
-        {/* Force session expire helper for testing */}
-        <button 
-          className="theme-toggle-btn" 
-          onClick={forceSessionExpire}
-          title="Simulate 2-Hour Inactivity Expiry (Dev Tool)"
-          style={{ color: 'var(--danger)' }}
-        >
-          <Clock size={18} />
-        </button>
-
         {/* Dark/Light mode toggler */}
         <button 
           className="theme-toggle-btn" 
@@ -118,10 +107,7 @@ const Header = ({ toggleSidebar, theme, setTheme }) => {
                       alignItems: 'center',
                       gap: '4px'
                     }}
-                    onClick={() => {
-                      notifications.forEach(n => n.read = true);
-                      pushNotification('All alerts marked read');
-                    }}
+                    onClick={() => markAllNotificationsRead()}
                   >
                     <CheckCheck size={12} />
                     Mark all read

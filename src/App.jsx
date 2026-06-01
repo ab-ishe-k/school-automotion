@@ -13,8 +13,8 @@ import Header from './components/Header';
 import Login from './components/Login';
 import IntegrationTab from './components/IntegrationTab';
 import IDGenerator from './components/IDGenerator';
-
 import OnboardingSetup from './components/OnboardingSetup';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Role Dashboards
 import PrincipalDashboard from './dashboards/PrincipalDashboard';
@@ -118,7 +118,9 @@ const MainAppLayout = () => {
         
         {/* Core Dashboard Viewport */}
         <main className="dashboard-viewport">
-          {renderContent()}
+          <ErrorBoundary>
+            {renderContent()}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

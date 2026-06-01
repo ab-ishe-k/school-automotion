@@ -11,16 +11,32 @@ export const hashPassword = async (password) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-// Initial roster of temporary credentials issued by the school admin
+/**
+ * SECURITY: Temporary passwords are no longer hardcoded in source code.
+ * In production, these would be generated server-side and sent via secure channel.
+ * For this demo app, we read them from env variables (set in .env.local) or fall
+ * back to safe generic defaults that are clearly labelled as demo-only.
+ *
+ * Create a .env.local file (git-ignored) with:
+ *   VITE_DEMO_PASS_PRINCIPAL=YourSecurePass1
+ *   VITE_DEMO_PASS_TEACHER=YourSecurePass2
+ *   ... etc.
+ */
+const env = (key, fallback) =>
+  typeof import.meta !== 'undefined' && import.meta.env[key]
+    ? import.meta.env[key]
+    : fallback;
+
 export const INITIAL_USERS = [
   {
     id: 'usr-principal-90281',
     name: 'Dr. Adrian Vance',
     role: 'Principal',
     email: 'vance.principal@school.edu',
+    linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150',
     tempId: 'TEMP-PRN-90281',
-    tempPassword: 'Principal2026!',
+    tempPassword: env('VITE_DEMO_PASS_PRINCIPAL', 'Demo-PRN-2026'),
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -31,9 +47,10 @@ export const INITIAL_USERS = [
     name: 'Mr. Marcus Davis',
     role: 'Teacher',
     email: 'davis.math@school.edu',
+    linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
     tempId: 'TEMP-TCH-20192',
-    tempPassword: 'MathDavis2026!',
+    tempPassword: env('VITE_DEMO_PASS_TEACHER', 'Demo-TCH-2026'),
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -44,9 +61,10 @@ export const INITIAL_USERS = [
     name: 'Liam Chen',
     role: 'Student',
     email: 'liam.chen@school.edu',
+    linkedStudentName: 'Liam Chen',
     avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150',
     tempId: 'TEMP-STD-88201',
-    tempPassword: 'LiamChen2026!',
+    tempPassword: env('VITE_DEMO_PASS_STUDENT', 'Demo-STD-2026'),
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -57,9 +75,10 @@ export const INITIAL_USERS = [
     name: 'Sarah Smith',
     role: 'Parent',
     email: 'sarah.smith@school.edu',
+    linkedStudentName: 'Liam Chen', // FIX: parent-student mapping now explicit
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
     tempId: 'TEMP-PAR-30821',
-    tempPassword: 'SarahSmith2026!',
+    tempPassword: env('VITE_DEMO_PASS_PARENT', 'Demo-PAR-2026'),
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -70,9 +89,10 @@ export const INITIAL_USERS = [
     name: 'Mrs. Janet Finch',
     role: 'Admin Staff',
     email: 'finch.admin@school.edu',
+    linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150',
     tempId: 'TEMP-ADM-10822',
-    tempPassword: 'AdminFinch2026!',
+    tempPassword: env('VITE_DEMO_PASS_ADMIN', 'Demo-ADM-2026'),
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -83,9 +103,10 @@ export const INITIAL_USERS = [
     name: 'Officer Alan',
     role: 'Reception / Office Staff',
     email: 'alan.frontdesk@school.edu',
+    linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
     tempId: 'TEMP-REC-00192',
-    tempPassword: 'AlanFront2026!',
+    tempPassword: env('VITE_DEMO_PASS_RECEPTION', 'Demo-REC-2026'),
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -96,9 +117,10 @@ export const INITIAL_USERS = [
     name: 'Ms. Clara Vance',
     role: 'Vice Principal',
     email: 'vance.vp@school.edu',
+    linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1594744803329-e58b31de215f?w=150',
     tempId: 'TEMP-VPS-10291',
-    tempPassword: 'ClaraVp2026!',
+    tempPassword: env('VITE_DEMO_PASS_VP', 'Demo-VPS-2026'),
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -121,21 +143,28 @@ export const AuthProvider = ({ children }) => {
   }, [users]);
 
   // Session expiry sweep on load/refresh
+  // FIX: was using stale session.user object — now looks up fresh user from users array
+  // to pick up any role/profile changes made since last login.
   useEffect(() => {
     const activeSession = localStorage.getItem('school_auth_session');
     if (activeSession) {
       try {
         const session = JSON.parse(activeSession);
         if (session.expiresAt < Date.now()) {
-          // Session has expired!
           logout();
           setSessionExpiredAlert(true);
         } else {
-          // Session is valid, restore session and refresh expiration (+2 hours)
-          setCurrentUser(session.user);
+          // Look up the current (possibly updated) user profile from state
+          const freshUser = users.find(u => u.id === session.user?.id);
+          if (!freshUser) {
+            logout();
+            return;
+          }
+          setCurrentUser(freshUser);
           const updatedSession = {
             ...session,
-            expiresAt: Date.now() + 2 * 60 * 60 * 1000 // 2 hours
+            user: freshUser,
+            expiresAt: Date.now() + 2 * 60 * 60 * 1000,
           };
           localStorage.setItem('school_auth_session', JSON.stringify(updatedSession));
         }
@@ -143,6 +172,7 @@ export const AuthProvider = ({ children }) => {
         logout();
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 1. SECURE LOGIN ROUTE
@@ -273,7 +303,10 @@ export const AuthProvider = ({ children }) => {
           return {
             ...u,
             passwordHash: hashed,
-            isSetupCompleted: true // Ensure setup is marked completed if resetting
+            isSetupCompleted: true,
+            // FIX: ensure permanentUsername is set so the user can actually log in.
+            // If they had one already, keep it. If not, derive one from their email prefix.
+            permanentUsername: u.permanentUsername || email.split('@')[0],
           };
         }
         return u;
