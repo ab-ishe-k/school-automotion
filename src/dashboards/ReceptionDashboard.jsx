@@ -239,7 +239,7 @@ const ReceptionDashboard = ({ activeSection, setActiveSection }) => {
 
       {/* A. CAMPUS VISITORS REGISTRY */}
       {activeTab === 'visitors' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '20px' }}>
+        <div className="responsive-grid-1-2">
           {/* Visitor intake form */}
           <div className="glass-panel" style={{ padding: '20px', alignSelf: 'start' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>

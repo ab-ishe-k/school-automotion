@@ -305,7 +305,7 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
           </div>
 
           {/* Grid for Raised Queries & Complaints */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="responsive-grid-2">
             {/* Queries block */}
             <div className="glass-panel" style={{ padding: '20px' }}>
               <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>

@@ -222,7 +222,7 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
             <DonutChart data={distributionData} title="Staff Salaries payout status" />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="responsive-grid-2">
             {/* Quick Grievances summary */}
             <div className="glass-panel" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>

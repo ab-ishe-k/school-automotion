@@ -28,7 +28,7 @@ const DashboardCards = ({ stats }) => {
       trendUp: true
     },
     {
-      title: 'Active Complaints',
+      title: 'Active Grievances',
       value: stats.totalComplaints,
       icon: AlertTriangle,
       themeClass: 'danger',

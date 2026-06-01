@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDatabase } from '../context/DatabaseContext';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -141,6 +141,67 @@ const IDGenerator = () => {
     }
   }, [category]);
 
+  // 4. PHOTO CAPTURE & GALLERY UPLOAD HANDLERS
+  const [cameraActive, setCameraActive] = useState(false);
+  const [stream, setStream] = useState(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  const startCamera = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: 300, height: 300, facingMode: 'user' } 
+      });
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setCameraActive(true);
+    } catch (err) {
+      pushNotification('Could not access camera: ' + err.message, 'danger');
+    }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    setStream(null);
+    setCameraActive(false);
+  };
+
+  // Stop camera stream when component unmounts
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext('2d');
+      context.drawImage(videoRef.current, 0, 0, 150, 150);
+      const dataUrl = canvasRef.current.toDataURL('image/jpeg');
+      setAvatarUrl(dataUrl);
+      stopCamera();
+      pushNotification('Photo captured successfully!', 'success');
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarUrl(reader.result);
+        pushNotification('Image uploaded from gallery!', 'success');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // 3. PRINT HANDLER
   const handlePrint = () => {
     pushNotification('Opening native print console...', 'info');
@@ -239,7 +300,7 @@ const IDGenerator = () => {
       </div>
 
       {/* Main Form & Preview Dashboard Panel */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '24px', alignItems: 'start' }}>
+      <div className="responsive-grid-12-1" style={{ alignItems: 'start' }}>
         
         {/* Left Side: Control Forms Panel */}
         <div className="glass-panel" style={{ padding: '24px' }}>
@@ -406,19 +467,71 @@ const IDGenerator = () => {
               </div>
             </div>
 
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label>Avatar / Photo Resource URL</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                value={avatarUrl}
-                onChange={e => setAvatarUrl(e.target.value)}
-                required
-              />
+            <div className="form-group" style={{ marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '20px' }}>
+              <label style={{ fontWeight: '700', fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+                Cardholder Photo / Avatar
+              </label>
+              
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                {/* Custom File Upload Input */}
+                <label className="btn btn-secondary" style={{ flex: 1, cursor: 'pointer', fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  📁 Open Gallery
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    style={{ display: 'none' }} 
+                    onChange={handleFileChange} 
+                  />
+                </label>
+
+                {/* Camera Capture Activation */}
+                <button 
+                  type="button" 
+                  className={`btn ${cameraActive ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1, fontSize: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  onClick={cameraActive ? stopCamera : startCamera}
+                >
+                  📸 {cameraActive ? 'Close Camera' : 'Open Camera'}
+                </button>
+              </div>
+
+              {/* Camera Live Feed Area */}
+              {cameraActive && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '12px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '12px' }}>
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    style={{ width: '100%', maxWidth: '200px', height: '200px', objectFit: 'cover', borderRadius: '8px', backgroundColor: '#000', transform: 'scaleX(-1)' }} 
+                  />
+                  <button 
+                    type="button" 
+                    className="btn btn-primary" 
+                    style={{ padding: '6px 16px', fontSize: '12px' }}
+                    onClick={capturePhoto}
+                  >
+                    Snap Photo
+                  </button>
+                  <canvas ref={canvasRef} width="150" height="150" style={{ display: 'none' }} />
+                </div>
+              )}
+
+              {/* Resource URL fallback */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>Or input raw image URL directly:</span>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  value={avatarUrl}
+                  onChange={e => setAvatarUrl(e.target.value)}
+                  placeholder="https://..."
+                  required
+                />
+              </div>
             </div>
 
             {/* Visual Styling settings */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '20px', marginTop: '20px' }}>
+            <div className="responsive-grid-12-1" style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px', marginTop: '20px' }}>
               <div className="form-group">
                 <label style={{ fontWeight: '700', fontSize: '11px' }}>ID Card Styling Theme</label>
                 <select className="filter-input" value={theme} onChange={e => setTheme(e.target.value)} style={{ width: '100%' }}>

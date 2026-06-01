@@ -522,7 +522,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
 
       {/* B. WORKFLOW ROUTING TAB */}
       {activeTab === 'routing' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div className="responsive-grid-2">
           {/* Pending Queries queue */}
           <div className="glass-panel" style={{ padding: '20px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -620,7 +620,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
 
       {/* C. ADMISSIONS & HIRING TAB */}
       {activeTab === 'admissions' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div className="responsive-grid-2">
           {/* Enroll Student Form */}
           <div className="glass-panel" style={{ padding: '20px' }}>
             <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--primary-light)' }}>
@@ -641,7 +641,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 />
               </div>
 
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+              <div className="form-grid responsive-grid-12-1" style={{ gap: '10px' }}>
                 <div className="form-group">
                   <label>Email Address</label>
                   <input 
@@ -666,7 +666,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 </div>
               </div>
 
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+              <div className="form-grid responsive-grid-12-1" style={{ gap: '10px' }}>
                 <div className="form-group">
                   <label>Parent Full Name</label>
                   <input 
@@ -703,7 +703,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 />
               </div>
 
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="form-grid responsive-grid-2-tight">
                 <div className="form-group">
                   <label>Monthly Tuition Fee ($)</label>
                   <input 
@@ -773,7 +773,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 />
               </div>
 
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+              <div className="form-grid responsive-grid-12-1" style={{ gap: '10px' }}>
                 <div className="form-group">
                   <label>Contract Email Account</label>
                   <input 
@@ -798,7 +798,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 </div>
               </div>
 
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="form-grid responsive-grid-2-tight">
                 <div className="form-group">
                   <label>Specific Designation</label>
                   <input 
@@ -821,7 +821,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 </div>
               </div>
 
-              <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="form-grid responsive-grid-2-tight">
                 <div className="form-group">
                   <label>Faculty Advisory Dept</label>
                   <select className="filter-input" value={tchDept} onChange={e => setTchDept(e.target.value)}>
@@ -862,7 +862,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
             Control global application properties, synchronization intervals, or perform database refreshes.
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', maxWidth: '800px' }}>
+          <div className="responsive-grid-2" style={{ gap: '16px', maxWidth: '800px' }}>
             <div style={{ border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', backgroundColor: 'var(--bg-tertiary)' }}>
               <h4 style={{ fontSize: '13px', fontWeight: '700', marginBottom: '6px', color: 'var(--danger)' }}>Database Hard Reset</h4>
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '12px' }}>

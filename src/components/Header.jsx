@@ -9,7 +9,8 @@ import {
   CheckCheck, 
   AlertCircle,
   Clock,
-  Sparkles
+  Sparkles,
+  User
 } from 'lucide-react';
 
 const Header = ({ toggleSidebar, theme, setTheme }) => {
@@ -81,20 +82,7 @@ const Header = ({ toggleSidebar, theme, setTheme }) => {
           </button>
 
           {showNotifications && (
-            <div 
-              className="glass-panel"
-              style={{
-                position: 'absolute',
-                top: '46px',
-                right: '0',
-                width: '320px',
-                maxHeight: '400px',
-                display: 'flex',
-                flexDirection: 'column',
-                zIndex: 999,
-                overflow: 'hidden'
-              }}
-            >
+            <div className="glass-panel notifications-dropdown">
               <div 
                 style={{ 
                   padding: '12px 16px', 
@@ -165,13 +153,10 @@ const Header = ({ toggleSidebar, theme, setTheme }) => {
         {/* User Identity profile tab */}
         {currentUser && (
           <div className="user-profile-badge">
-            <img 
-              src={currentUser.avatar} 
-              alt={currentUser.name} 
-              className="user-avatar-sm"
-            />
+            <div className="user-avatar-icon-box">
+              <User size={18} />
+            </div>
             <div className="user-meta-info">
-              <span className="user-meta-name">{currentUser.name}</span>
               <span className="user-meta-role">{currentUser.role}</span>
             </div>
           </div>

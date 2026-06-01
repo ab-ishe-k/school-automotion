@@ -173,12 +173,12 @@ export const DonutChart = ({ data = [], title = 'Category Weight' }) => {
   let accumulatedAngle = -90; // Start sector layout from 12 o'clock
 
   return (
-    <div className="chart-container-panel" style={{ flex: '0 0 350px' }}>
+    <div className="chart-container-panel" style={{ flex: '1 1 300px' }}>
       <div className="chart-title-bar">
         <span style={{ fontSize: '14px', fontWeight: '700' }}>{title}</span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+      <div className="donut-chart-layout">
         <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
             <circle 

@@ -8,6 +8,7 @@ import {
   Database, 
   Mail, 
   Users, 
+  User,
   LogOut,
   Sparkles,
   BookOpen,
@@ -120,14 +121,11 @@ const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => 
 
         {/* User Card */}
         <div className="sidebar-user-block">
-          <img 
-            className="user-avatar-sm" 
-            src={currentUser.avatar} 
-            alt={currentUser.name} 
-          />
+          <div className="user-avatar-icon-box" style={{ borderColor: 'rgba(255, 255, 255, 0.15)', color: 'var(--accent)' }}>
+            <User size={20} />
+          </div>
           <div className="user-meta-info" style={{ color: 'white' }}>
-            <span className="user-meta-name">{currentUser.name}</span>
-            <span className="user-meta-role" style={{ color: 'var(--accent)' }}>
+            <span className="user-meta-role" style={{ color: 'var(--accent)', fontWeight: '700' }}>
               {currentUser.role}
             </span>
           </div>

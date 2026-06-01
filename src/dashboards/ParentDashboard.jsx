@@ -242,7 +242,7 @@ const ParentDashboard = ({ activeSection, setActiveSection }) => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="responsive-grid-2">
             {/* Child queries card */}
             <div className="glass-panel" style={{ padding: '20px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>

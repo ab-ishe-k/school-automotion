@@ -137,10 +137,11 @@ const OnboardingSetup = () => {
             
             {/* User Profile Summary */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '24px' }}>
-              <img src={currentUser.avatar} alt={currentUser.name} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--primary-light)' }} />
+              <div className="user-avatar-icon-box" style={{ width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', backgroundColor: 'var(--info-bg)', color: 'var(--info)', border: '2px solid var(--primary-light)' }}>
+                <User size={20} />
+              </div>
               <div>
-                <h4 style={{ fontSize: '14px', fontWeight: '700', margin: 0 }}>{currentUser.name}</h4>
-                <p style={{ fontSize: '11px', color: 'var(--primary-light)', margin: 0, fontWeight: '600', textTransform: 'uppercase' }}>{currentUser.role}</p>
+                <p style={{ fontSize: '13px', color: 'var(--primary-light)', margin: 0, fontWeight: '700', textTransform: 'uppercase' }}>{currentUser.role}</p>
               </div>
             </div>
 

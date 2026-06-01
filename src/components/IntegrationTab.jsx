@@ -254,7 +254,7 @@ function doPost(e) {
         <div className="sheets-container">
           
           {/* Cloud Connection Configuration Widget */}
-          <div className="glass-panel" style={{ padding: '20px', marginBottom: '20px', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', alignItems: 'center' }}>
+          <div className="glass-panel responsive-grid-12-1" style={{ padding: '20px', marginBottom: '20px', alignItems: 'center' }}>
             <div>
               <h3 style={{ fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                 <Settings size={18} style={{ color: 'var(--primary-light)' }} />
@@ -602,7 +602,7 @@ function doPost(e) {
             </select>
           </div>
 
-          <div className="gmail-container">
+          <div className={`gmail-container ${activeEmailId ? 'has-active-email' : ''}`}>
             {/* List pane */}
             <div className="gmail-sidebar">
               <div className="gmail-sidebar-header">
@@ -650,6 +650,13 @@ function doPost(e) {
               {activeEmail ? (
                 <>
                   <div className="gmail-body-header">
+                    <button 
+                      className="btn btn-secondary mobile-back-btn" 
+                      style={{ display: 'none', marginBottom: '12px', padding: '6px 12px', fontSize: '11px', alignItems: 'center', gap: '6px' }}
+                      onClick={() => setActiveEmailId(null)}
+                    >
+                      ← Back to Inbox
+                    </button>
                     <h3 className="gmail-body-subject">{activeEmail.subject}</h3>
                     <div className="gmail-body-meta">
                       <span>From: <strong style={{ color: 'var(--text-primary)' }}>{activeEmail.sender}</strong></span>

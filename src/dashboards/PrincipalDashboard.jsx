@@ -286,18 +286,18 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
           </div>
 
           {/* Charts Rows */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px' }}>
+          <div className="charts-grid">
             <TrendLineChart data={trendData} title="Monthly Intake Analytics (Fee Collection Trends)" />
             <DonutChart data={pendingDuesDistribution} title="Outstanding Billing Dues Distribution by Class" />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px' }}>
+          <div className="charts-grid">
             <DonutChart data={staffPayoutsAllocation} title="Staff Salary Overheads Allocation by Dept" />
-            <DonutChart data={complaintDistribution} title="Lodge Complaint Category Metrics" />
+            <DonutChart data={complaintDistribution} title="Lodge Grievance Category Metrics" />
           </div>
 
           {/* Quick Tasks Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+          <div className="responsive-grid-2">
             {/* Direct Approval card summary */}
             <div className="glass-panel" style={{ padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>

@@ -468,9 +468,11 @@ const Login = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                <img src={u.avatar} alt={u.name} style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }} />
+                <div className="user-avatar-icon-box" style={{ width: '28px', height: '28px', border: '1px solid var(--primary-light)', backgroundColor: 'var(--info-bg)', color: 'var(--info)' }}>
+                  <User size={14} />
+                </div>
                 <div>
-                  <h4 style={{ margin: 0, fontWeight: '700', fontSize: '12px' }}>{u.name}</h4>
+                  <h4 style={{ margin: 0, fontWeight: '700', fontSize: '12px' }}>{u.role}</h4>
                   <span className={`status-badge ${u.isSetupCompleted ? 'approved' : 'pending'}`} style={{ fontSize: '8px', padding: '1px 5px' }}>
                     {u.isSetupCompleted ? 'Onboarding Active' : 'Setup Required'}
                   </span>
