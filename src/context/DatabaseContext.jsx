@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { sanitize, nameToEmail, genId } from '../utils/helpers';
 
 const DatabaseContext = createContext();
 
@@ -410,6 +411,11 @@ export const DatabaseProvider = ({ children }) => {
     setAuditLogs(prev => [newLog, ...prev]);
   };
 
+  // Mark all notifications as read (FIX: was mutating state directly in Header)
+  const markAllNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
   // Push notification helper
   const pushNotification = (message, type = 'info') => {
     const newNotif = {
@@ -465,8 +471,8 @@ export const DatabaseProvider = ({ children }) => {
 
   // 1. APPOINTMENT ACTIONS
   const bookAppointment = (booking, currentUser) => {
-    const bookingId = `APT-${Math.floor(10000 + Math.random() * 90000)}`;
-    const emailTo = `${currentUser.name.toLowerCase().replace(' ', '.')}@school.edu`;
+    const bookingId = genId('APT');
+    const emailTo = nameToEmail(currentUser.name);
     const isPrincipal = booking.department === 'Principal';
 
     const newBooking = {
@@ -477,7 +483,7 @@ export const DatabaseProvider = ({ children }) => {
       department: booking.department,
       date: booking.date,
       time: booking.time,
-      purpose: booking.purpose,
+      purpose: sanitize(booking.purpose),
       status: isPrincipal ? 'PENDING' : 'APPROVED',
       calendarEventId: isPrincipal ? '' : `gcal_evt_${Math.floor(100000 + Math.random() * 900000)}`,
       resolutionNotes: '',
@@ -536,7 +542,7 @@ export const DatabaseProvider = ({ children }) => {
       `Set status to APPROVED in Google Sheets. Created Google Calendar Event: ${calendarEvtId}`
     );
 
-    const clientEmail = `${clientName.toLowerCase().replace(' ', '.')}@school.edu`;
+    const clientEmail = nameToEmail(clientName);
     sendEmail(
       clientEmail,
       `Appointment APPROVED & Calendar Event Added - ID: ${id}`,
@@ -574,7 +580,7 @@ export const DatabaseProvider = ({ children }) => {
       `Set status to REJECTED in Google Sheets. Reason: ${remarks}`
     );
 
-    const clientEmail = `${clientName.toLowerCase().replace(' ', '.')}@school.edu`;
+    const clientEmail = nameToEmail(clientName);
     sendEmail(
       clientEmail,
       `Appointment REJECTED - ID: ${id}`,
@@ -614,7 +620,7 @@ export const DatabaseProvider = ({ children }) => {
       `Updated Date to ${newDate} and Time to ${newTime} in Appointments Sheet.`
     );
 
-    const clientEmail = `${clientName.toLowerCase().replace(' ', '.')}@school.edu`;
+    const clientEmail = nameToEmail(clientName);
     sendEmail(
       clientEmail,
       `Appointment RESCHEDULED - ID: ${id}`,
@@ -650,7 +656,7 @@ export const DatabaseProvider = ({ children }) => {
       `Set status to CANCELLED in Google Sheets. Removed calendar event.`
     );
 
-    const clientEmail = `${clientName.toLowerCase().replace(' ', '.')}@school.edu`;
+    const clientEmail = nameToEmail(clientName);
     sendEmail(
       clientEmail,
       `Appointment CANCELLED - ID: ${id}`,
@@ -662,17 +668,17 @@ export const DatabaseProvider = ({ children }) => {
 
   // 2. QUERY ACTIONS
   const raiseQuery = (query, currentUser) => {
-    const queryId = `QRY-${Math.floor(10000 + Math.random() * 90000)}`;
+    const queryId = genId('QRY');
     const assigned = getAssignedOfficer(query.category, 'query');
-    const userEmail = `${currentUser.name.toLowerCase().replace(' ', '.')}@school.edu`;
+    const userEmail = nameToEmail(currentUser.name);
 
     const newQuery = {
       id: queryId,
       raisedBy: currentUser.name,
       role: currentUser.role,
       category: query.category,
-      subject: query.subject,
-      description: query.description,
+      subject: sanitize(query.subject),
+      description: sanitize(query.description),
       assignedTo: assigned,
       date: new Date().toISOString(),
       status: 'Pending',
@@ -727,7 +733,7 @@ export const DatabaseProvider = ({ children }) => {
       `Spreadsheet logged. Resolution remarks added: ${remarks}`
     );
 
-    const clientEmail = `${clientName.toLowerCase().replace(' ', '.')}@school.edu`;
+    const clientEmail = nameToEmail(clientName);
     sendEmail(
       clientEmail,
       `Query Update Notification - ID: ${id} [${newStatus.toUpperCase()}]`,
@@ -743,16 +749,16 @@ export const DatabaseProvider = ({ children }) => {
 
   // 3. COMPLAINT ACTIONS
   const submitComplaint = (complaint, currentUser) => {
-    const complaintId = `CMP-${Math.floor(10000 + Math.random() * 90000)}`;
+    const complaintId = genId('CMP');
     const assigned = getAssignedOfficer(complaint.complaintType, 'complaint');
-    const userEmail = `${currentUser.name.toLowerCase().replace(' ', '.')}@school.edu`;
+    const userEmail = nameToEmail(currentUser.name);
 
     const newComplaint = {
       id: complaintId,
       submittedBy: currentUser.name,
       role: currentUser.role,
       complaintType: complaint.complaintType,
-      description: complaint.description,
+      description: sanitize(complaint.description),
       assignedOfficer: assigned,
       date: new Date().toISOString(),
       status: 'Pending',
@@ -808,7 +814,7 @@ export const DatabaseProvider = ({ children }) => {
       `Action taken: ${fields.actionTaken}. Internal Notes updated.`
     );
 
-    const clientEmail = `${clientName.toLowerCase().replace(' ', '.')}@school.edu`;
+    const clientEmail = nameToEmail(clientName);
     sendEmail(
       clientEmail,
       `Complaint Ticket Update - ID: ${id} [${fields.status}]`,
@@ -852,7 +858,7 @@ export const DatabaseProvider = ({ children }) => {
       `Dear Principal Vance,\n\nA complaint ticket has been escalated directly to you for executive intervention.\n\nTicket ID: ${id}\nComplaint Type: ${complaintType}\nSubmitted By: ${clientName}\n\nPlease check your executive dashboard under the Escalations panel immediately.`
     );
 
-    const clientEmail = `${clientName.toLowerCase().replace(' ', '.')}@school.edu`;
+    const clientEmail = nameToEmail(clientName);
     sendEmail(
       clientEmail,
       `Complaint Ticket ESCALATED - ID: ${id}`,
@@ -954,8 +960,9 @@ export const DatabaseProvider = ({ children }) => {
 
     const amtPaid = Number(amount);
     
-    // Find Student
-    const studentToUpdate = (currentUser.role === 'Parent') ? 'Liam Chen' : currentUser.name;
+    // FIX: was hardcoded to 'Liam Chen' regardless of who was logged in.
+    // Now uses the explicit linkedStudentName from AuthContext user profile.
+    const studentToUpdate = currentUser.linkedStudentName || currentUser.name;
     
     let updatedStd = null;
     setStudents(prev => 
@@ -1001,7 +1008,7 @@ export const DatabaseProvider = ({ children }) => {
     setPayments(prev => [newPayment, ...prev]);
 
     // Send confirmation email
-    const emailTo = `${currentUser.name.toLowerCase().replace(/\s+/g, '.')}@school.edu`;
+    const emailTo = nameToEmail(currentUser.name);
     sendEmail(
       emailTo,
       `💳 Beacon Fee Payment Confirmation - ID: ${payId}`,
@@ -1331,6 +1338,7 @@ export const DatabaseProvider = ({ children }) => {
         googleSheetsUrl,
         setGoogleSheetsUrl,
         apiLogs,
+        markAllNotificationsRead,
         runDuesReminderLoop,
         bookAppointment,
         approveAppointment,
