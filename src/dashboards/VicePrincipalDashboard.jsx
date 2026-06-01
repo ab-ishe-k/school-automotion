@@ -26,6 +26,8 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
     staff, 
     students,
     payments, 
+    leaves,
+    updateLeaveStatus,
     updateComplaintStatus, 
     payTeacherSalary, 
     payFee,
@@ -34,7 +36,7 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
   } = useDatabase();
   const { currentUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('overview'); // overview, discipline-transport, payroll, student-fees, registry-editor
+  const [activeTab, setActiveTab] = useState('overview'); // overview, discipline-transport, payroll, student-fees, registry-editor, leaves
 
   // Sync sidebar clicks with internal VP dashboard tabs
   useEffect(() => {
@@ -47,6 +49,8 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
       setActiveTab('overview');
     } else if (activeSection === 'complaints') {
       setActiveTab('discipline-transport');
+    } else if (activeSection === 'leaves') {
+      setActiveTab('leaves');
     }
   }, [activeSection]);
 
@@ -76,12 +80,22 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
   const totalOutstandingFees = students.reduce((sum, s) => sum + Number(s.pendingAmount || 0), 0);
   const pendingStudentsCount = students.filter(s => s.pendingAmount > 0).length;
 
+  // Staff Leaves Contexts
+  const staffLeavesForVp = (leaves || []).filter(l => l.applicantRole === 'Teacher' && l.assignedTo === 'Ms. Clara Vance');
+  const [vpReviewRemarks, setVpReviewRemarks] = useState({});
+
+  const handleReviewStaffLeave = (leaveId, status) => {
+    const remarks = vpReviewRemarks[leaveId] || '';
+    updateLeaveStatus(leaveId, status, remarks, currentUser);
+    setVpReviewRemarks(prev => ({ ...prev, [leaveId]: '' }));
+  };
+
   const stats = {
     totalAppointments: staff.length, // Staff Headcount
     pendingAppointments: pendingSalariesCount, // Pending Payroll Dues
     totalQueries: activeTransportComplaints.length, // Transport Grievances
     resolvedQueries: complaints.filter(c => c.status === 'Resolved').length,
-    totalComplaints: complaints.length,
+    totalComplaints: staffLeavesForVp.filter(l => l.status === 'Pending').length,
     escalatedComplaints: disciplinaryIssues.length // Active Disciplinaries
   };
 
@@ -181,7 +195,8 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
           { key: 'discipline-transport', label: `Incidents oversight (${activeGrievances.length})` },
           { key: 'payroll', label: `Staff Payouts Queue (${pendingSalariesCount})` },
           { key: 'student-fees', label: `Collect Student Fees` },
-          { key: 'registry-editor', label: `Database Registry Editor` }
+          { key: 'registry-editor', label: `Database Registry Editor` },
+          { key: 'leaves', label: `Staff Leaves Desk (${staffLeavesForVp.filter(l => l.status === 'Pending').length})` }
         ].map(tab => (
           <button 
             key={tab.key}
@@ -206,7 +221,7 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
             <div className="glass-panel" style={{ padding: '20px', borderLeft: '4px solid var(--warning)', background: 'linear-gradient(to right, rgba(245, 158, 11, 0.05), transparent)' }}>
               <p style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: '700' }}>Outstanding Student Fees</p>
-              <h2 style={{ fontSize: '24px', fontWeight: '800', margin: '4px 0', color: 'var(--warning)' }}>${totalOutstandingDues.toLocaleString()}</h2>
+              <h2 style={{ fontSize: '24px', fontWeight: '800', margin: '4px 0', color: 'var(--warning)' }}>${totalOutstandingFees.toLocaleString()}</h2>
               <p style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>Across {pendingStudentsCount} students with outstanding balances</p>
             </div>
             
@@ -634,6 +649,93 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
                 </table>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* F. STAFF LEAVES APPROVAL DESK TAB */}
+      {activeTab === 'leaves' && (
+        <div className="glass-panel" style={{ padding: '20px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px' }}>Staff & Faculty Leave Applications Inbox</h3>
+
+          <div className="table-container">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Leave ID</th>
+                  <th>Faculty Name</th>
+                  <th>Department / Subject</th>
+                  <th>Duration Dates</th>
+                  <th>Leave Type</th>
+                  <th>Reason / Details</th>
+                  <th>Status</th>
+                  <th>Approver Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {staffLeavesForVp.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
+                      No staff leave requests submitted.
+                    </td>
+                  </tr>
+                ) : (
+                  staffLeavesForVp.map(lv => (
+                    <tr key={lv.id}>
+                      <td style={{ fontWeight: '700' }}>{lv.id}</td>
+                      <td style={{ fontWeight: '600' }}>{lv.applicantName}</td>
+                      <td>{lv.applicantClass}</td>
+                      <td style={{ fontSize: '12px' }}>
+                        <strong>{lv.startDate}</strong> to <strong>{lv.endDate}</strong>
+                      </td>
+                      <td>
+                        <span className="status-badge warning" style={{ fontSize: '10.5px' }}>{lv.leaveType}</span>
+                      </td>
+                      <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '12.5px' }} title={lv.reason}>
+                        "{lv.reason}"
+                      </td>
+                      <td>
+                        <span className={`status-badge ${lv.status.toLowerCase()}`}>{lv.status}</span>
+                      </td>
+                      <td>
+                        {lv.status === 'Pending' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <input
+                              type="text"
+                              placeholder="Add VP remarks..."
+                              className="filter-input"
+                              style={{ padding: '4px 8px', fontSize: '11.5px', minWidth: '150px' }}
+                              value={vpReviewRemarks[lv.id] || ''}
+                              onChange={e => setVpReviewRemarks(prev => ({ ...prev, [lv.id]: e.target.value }))}
+                            />
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button
+                                className="btn btn-primary"
+                                style={{ padding: '4px 10px', fontSize: '11px', backgroundColor: 'var(--success)', borderColor: 'transparent', flex: 1 }}
+                                onClick={() => handleReviewStaffLeave(lv.id, 'Approved')}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                className="btn btn-secondary"
+                                style={{ padding: '4px 10px', fontSize: '11px', color: 'var(--danger)', borderColor: 'var(--danger)', flex: 1 }}
+                                onClick={() => handleReviewStaffLeave(lv.id, 'Rejected')}
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-tertiary)' }}>
+                            {lv.remarks ? `💬 Remarks: "${lv.remarks}"` : '—'}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

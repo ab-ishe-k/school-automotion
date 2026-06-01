@@ -28,6 +28,7 @@ const IntegrationTab = () => {
     payments,
     students,
     staff,
+    leaves,
     virtualEmails, 
     pushNotification,
     googleSheetsUrl,
@@ -39,7 +40,7 @@ const IntegrationTab = () => {
   const [activeSubTab, setActiveSubTab] = useState('sheets'); // sheets, gmail, calendar
 
   // Google Sheets states
-  const [activeSheet, setActiveSheet] = useState('appointments'); // appointments, queries, complaints, payments, students, staff
+  const [activeSheet, setActiveSheet] = useState('appointments'); // appointments, queries, complaints, payments, students, staff, leaves
   const [sheetSearch, setSheetSearch] = useState('');
 
   // Gmail states
@@ -132,6 +133,8 @@ function doPost(e) {
       headers = ["Student ID", "Name", "Email", "Class", "Roll Number", "Parent Name", "Parent Email", "Parent Phone", "Admission Date", "Tuition Fee", "Bus Fee", "Total Monthly Fee", "Paid Amount", "Pending Amount", "Pending Months", "Payment Date", "Payment Status"];
     } else if (sheetName === 'staff') {
       headers = ["Staff ID", "Name", "Role", "Email", "Phone", "Designation", "Department", "Joined Date", "Salary", "Paid Salary", "Remaining Salary", "Payment Date", "Payment Status"];
+    } else if (sheetName === 'leaves') {
+      headers = ["Leave ID", "Applicant Name", "Applicant Role", "Class / Department", "Start Date", "End Date", "Leave Type", "Reason", "Assigned To", "Status", "Remarks"];
     }
 
     csvContent += headers.map(h => `"${h}"`).join(",") + "\n";
@@ -151,6 +154,8 @@ function doPost(e) {
         rowValues = [row.id, row.name, row.email, row.class, row.rollNumber || '', row.parentName || '', row.parentEmail || '', row.parentContact || '', row.admissionDate || '', row.monthlyTuitionFee || 0, row.busFee || 0, row.monthlyExtraCurricularFee || 0, row.totalMonthlyFee || 0, row.paidAmount || 0, row.pendingAmount || 0, row.pendingMonths || 0, row.paymentDate || '', row.paymentStatus || 'Pending'];
       } else if (sheetName === 'staff') {
         rowValues = [row.id, row.name, row.role, row.email, row.phone || '', row.designation || '', row.department || '', row.joiningDate || row.dateJoined || '', row.monthlySalary || row.salary || 0, row.paidSalary || 0, row.remainingSalary || 0, row.paymentDate || '', row.paymentStatus || 'Pending'];
+      } else if (sheetName === 'leaves') {
+        rowValues = [row.id, row.applicantName, row.applicantRole, row.applicantClass, row.startDate, row.endDate, row.leaveType, row.reason, row.assignedTo, row.status, row.remarks];
       }
       csvContent += rowValues.map(v => `"${(v || '').toString().replace(/"/g, '""')}"`).join(",") + "\n";
     });
@@ -175,6 +180,7 @@ function doPost(e) {
     else if (activeSheet === 'payments') data = payments;
     else if (activeSheet === 'students') data = students;
     else if (activeSheet === 'staff') data = staff;
+    else if (activeSheet === 'leaves') data = leaves;
 
     if (!sheetSearch) return data;
 
@@ -293,7 +299,7 @@ function doPost(e) {
           </div>
 
           <div className="sheets-tabs-bar" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
-            {['appointments', 'queries', 'complaints', 'payments', 'students', 'staff'].map(sheet => (
+            {['appointments', 'queries', 'complaints', 'payments', 'students', 'staff', 'leaves'].map(sheet => (
               <button 
                 key={sheet}
                 className={`sheets-tab-btn ${activeSheet === sheet ? 'active' : ''}`}
@@ -404,6 +410,21 @@ function doPost(e) {
                     <th>Months</th>
                     <th>Pay Date</th>
                     <th>Status</th>
+                  </tr>
+                )}
+                {activeSheet === 'leaves' && (
+                  <tr>
+                    <th>Leave ID</th>
+                    <th>Applicant Name</th>
+                    <th>Role</th>
+                    <th>Class / Department</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Leave Type</th>
+                    <th>Reason</th>
+                    <th>Assigned To</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
                   </tr>
                 )}
                 {activeSheet === 'staff' && (
@@ -521,6 +542,27 @@ function doPost(e) {
                           <td>
                             <span className={`status-badge ${(row.paymentStatus || 'Pending').toLowerCase()}`}>{row.paymentStatus || 'Pending'}</span>
                           </td>
+                        </>
+                      )}
+                      {activeSheet === 'leaves' && (
+                        <>
+                          <td style={{ fontWeight: '700', color: 'var(--primary-light)' }}>{row.id}</td>
+                          <td style={{ fontWeight: '600' }}>{row.applicantName}</td>
+                          <td>{row.applicantRole}</td>
+                          <td>{row.applicantClass}</td>
+                          <td>{row.startDate}</td>
+                          <td>{row.endDate}</td>
+                          <td>
+                            <span className="priority-tag medium" style={{ backgroundColor: 'var(--info-bg)', color: 'var(--info)' }}>
+                              {row.leaveType}
+                            </span>
+                          </td>
+                          <td style={{ maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.reason}>{row.reason}</td>
+                          <td>{row.assignedTo}</td>
+                          <td>
+                            <span className={`status-badge ${(row.status || 'Pending').toLowerCase()}`}>{row.status}</span>
+                          </td>
+                          <td style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.remarks || '—'}>{row.remarks || '—'}</td>
                         </>
                       )}
                       {activeSheet === 'staff' && (

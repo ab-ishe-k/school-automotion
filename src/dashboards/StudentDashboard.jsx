@@ -20,6 +20,9 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
     queries, 
     complaints, 
     students,
+    staff,
+    leaves,
+    applyLeave,
     bookAppointment, 
     cancelAppointment, 
     rescheduleAppointment,
@@ -28,7 +31,7 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
   } = useDatabase();
   const { currentUser } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('tickets'); // tickets, book, query, complaint
+  const [activeTab, setActiveTab] = useState('tickets'); // tickets, book, query, complaint, leaves
 
   // Sync sidebar clicks with internal dashboard tabs
   useEffect(() => {
@@ -41,6 +44,8 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
       setActiveTab('query');
     } else if (activeSection === 'complaints') {
       setActiveTab('complaint');
+    } else if (activeSection === 'leaves') {
+      setActiveTab('leaves');
     }
   }, [activeSection]);
   
@@ -66,11 +71,18 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
   const [compType, setCompType] = useState('Infrastructure');
   const [compDesc, setCompDesc] = useState('');
 
+  // Leave Form
+  const [leaveStartDate, setLeaveStartDate] = useState('');
+  const [leaveEndDate, setLeaveEndDate] = useState('');
+  const [leaveType, setLeaveType] = useState('Sick Leave');
+  const [leaveReason, setLeaveReason] = useState('');
+
   // 2. FILTER STUDENT'S RECORDS
   const studentName = currentUser.name;
   const studentApts = appointments.filter(a => a.userName === studentName);
   const studentQueries = queries.filter(q => q.raisedBy === studentName);
   const studentComplaints = complaints.filter(c => c.submittedBy === studentName);
+  const studentLeaves = (leaves || []).filter(l => l.applicantName === studentName);
 
   // Find student's own record for fee status warning alerts
   const studentRecord = students.find(s => s.name === studentName) || { feeStatus: 'Outstanding' };
@@ -156,6 +168,23 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
     setActiveTab('tickets');
   };
 
+  const handleApplyLeave = (e) => {
+    e.preventDefault();
+    if (!leaveStartDate || !leaveEndDate || !leaveReason) return;
+    applyLeave({
+      startDate: leaveStartDate,
+      endDate: leaveEndDate,
+      leaveType: leaveType,
+      reason: leaveReason
+    }, currentUser);
+
+    setLeaveStartDate('');
+    setLeaveEndDate('');
+    setLeaveType('Sick Leave');
+    setLeaveReason('');
+    setActiveTab('tickets');
+  };
+
   const handleCancelApt = (id) => {
     if (window.confirm("Are you sure you want to cancel this appointment slot?")) {
       cancelAppointment(id, currentUser);
@@ -201,7 +230,7 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
             background: 'none', border: 'none',
             borderBottom: activeTab === 'tickets' ? '2.5px solid var(--primary-light)' : 'none',
             color: activeTab === 'tickets' ? 'var(--primary-light)' : 'var(--text-secondary)',
-            borderRadius: '0', padding: '10px 16px', fontWeight: '700', fontSize: '14px'
+            borderRadius: '0', padding: '10px 16px', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap'
           }}
           onClick={() => { setActiveTab('tickets'); setActiveSection && setActiveSection('dashboard'); }}
         >
@@ -213,7 +242,7 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
             background: 'none', border: 'none',
             borderBottom: activeTab === 'book' ? '2.5px solid var(--primary-light)' : 'none',
             color: activeTab === 'book' ? 'var(--primary-light)' : 'var(--text-secondary)',
-            borderRadius: '0', padding: '10px 16px', fontWeight: '700', fontSize: '14px'
+            borderRadius: '0', padding: '10px 16px', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap'
           }}
           onClick={() => { setActiveTab('book'); setActiveSection && setActiveSection('appointments'); }}
         >
@@ -225,7 +254,7 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
             background: 'none', border: 'none',
             borderBottom: activeTab === 'query' ? '2.5px solid var(--primary-light)' : 'none',
             color: activeTab === 'query' ? 'var(--primary-light)' : 'var(--text-secondary)',
-            borderRadius: '0', padding: '10px 16px', fontWeight: '700', fontSize: '14px'
+            borderRadius: '0', padding: '10px 16px', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap'
           }}
           onClick={() => { setActiveTab('query'); setActiveSection && setActiveSection('queries'); }}
         >
@@ -237,11 +266,23 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
             background: 'none', border: 'none',
             borderBottom: activeTab === 'complaint' ? '2.5px solid var(--primary-light)' : 'none',
             color: activeTab === 'complaint' ? 'var(--primary-light)' : 'var(--text-secondary)',
-            borderRadius: '0', padding: '10px 16px', fontWeight: '700', fontSize: '14px'
+            borderRadius: '0', padding: '10px 16px', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap'
           }}
           onClick={() => { setActiveTab('complaint'); setActiveSection && setActiveSection('complaints'); }}
         >
           Lodge Infrastructure Grievance
+        </button>
+        <button 
+          className="btn"
+          style={{
+            background: 'none', border: 'none',
+            borderBottom: activeTab === 'leaves' ? '2.5px solid var(--primary-light)' : 'none',
+            color: activeTab === 'leaves' ? 'var(--primary-light)' : 'var(--text-secondary)',
+            borderRadius: '0', padding: '10px 16px', fontWeight: '700', fontSize: '14px', whiteSpace: 'nowrap'
+          }}
+          onClick={() => { setActiveTab('leaves'); setActiveSection && setActiveSection('leaves'); }}
+        >
+          Leave Application Desk
         </button>
       </div>
 
@@ -570,6 +611,135 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
               Submit Grievance to Safety Officer
             </button>
           </form>
+        </div>
+      )}
+
+      {/* E. LEAVE APPLICATION DESK TAB */}
+      {activeTab === 'leaves' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="responsive-grid-2">
+            {/* Form to Apply for Leave */}
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <PlusCircle size={18} style={{ color: 'var(--primary-light)' }} />
+                Submit New Leave Application
+              </h3>
+
+              {(() => {
+                const stdRecord = students.find(s => s.name === currentUser.name);
+                const studentClass = stdRecord ? stdRecord.class : 'Grade 11-A';
+                const classTeacher = staff.find(s => s.classTeacherOf === studentClass);
+                const classTeacherName = classTeacher ? classTeacher.name : 'Mr. Marcus Davis';
+                return (
+                  <div style={{ marginBottom: '18px', padding: '12px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '6px', fontSize: '12.5px', border: '1px solid var(--border-color)' }}>
+                    <div>🏫 My Registered Class: <strong>{studentClass}</strong></div>
+                    <div style={{ marginTop: '4px' }}>🧑‍🏫 Assigned Class Teacher: <strong>{classTeacherName}</strong></div>
+                    <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                      *Note: Student leave applications are automatically routed to your assigned class teacher for approval.
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <form onSubmit={handleApplyLeave}>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label>Start Date</label>
+                    <input 
+                      type="date" 
+                      className="form-input"
+                      value={leaveStartDate}
+                      onChange={e => setLeaveStartDate(e.target.value)}
+                      min="2026-06-01"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>End Date</label>
+                    <input 
+                      type="date" 
+                      className="form-input"
+                      value={leaveEndDate}
+                      onChange={e => setLeaveEndDate(e.target.value)}
+                      min={leaveStartDate || '2026-06-01'}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label>Leave Category / Type</label>
+                    <select 
+                      className="filter-input"
+                      value={leaveType}
+                      onChange={e => setLeaveType(e.target.value)}
+                    >
+                      <option value="Sick Leave">Sick Leave (Medical recovery)</option>
+                      <option value="Casual Leave">Casual Leave (Personal affairs)</option>
+                      <option value="Family Event">Family Event / Function</option>
+                      <option value="Medical Emergency">Medical Emergency</option>
+                      <option value="Others">Others</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '12px' }}>
+                  <label>Reason for Leave Request</label>
+                  <textarea 
+                    className="form-input"
+                    style={{ minHeight: '100px' }}
+                    placeholder="Provide a clear description or doctor notes details..."
+                    value={leaveReason}
+                    onChange={e => setLeaveReason(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
+                  Submit Leave Request to Class Teacher
+                </button>
+              </form>
+            </div>
+
+            {/* Leave History List */}
+            <div className="glass-panel" style={{ padding: '24px' }}>
+              <h3 style={{ fontSize: '15px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <History size={18} style={{ color: 'var(--success)' }} />
+                Leave Request Logs & Status
+              </h3>
+
+              {studentLeaves.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
+                  No leave requests submitted yet.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '420px', overflowY: 'auto' }}>
+                  {studentLeaves.map(lv => (
+                    <div key={lv.id} style={{ padding: '14px', backgroundColor: 'var(--bg-tertiary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
+                        <span style={{ fontWeight: '700', fontSize: '12.5px', color: 'var(--primary-light)' }}>{lv.id} - {lv.leaveType}</span>
+                        <span className={`status-badge ${lv.status.toLowerCase()}`} style={{ fontSize: '10px', padding: '2px 8px' }}>{lv.status}</span>
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                        📅 Duration: <strong>{lv.startDate}</strong> to <strong>{lv.endDate}</strong>
+                      </div>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic', marginBottom: '6px' }}>
+                        "{lv.reason}"
+                      </p>
+                      <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', borderTop: '1px dashed var(--border-color)', paddingTop: '6px' }}>
+                        👤 Routed Approver: <strong>{lv.assignedTo}</strong>
+                      </div>
+                      {lv.remarks && (
+                        <div style={{ marginTop: '8px', padding: '8px', backgroundColor: 'var(--info-bg)', borderRadius: '4px', fontSize: '11.5px', color: 'var(--primary-light)', fontWeight: '500' }}>
+                          💬 Remarks: "{lv.remarks}"
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

@@ -336,6 +336,7 @@ const INITIAL_STAFF = [
     phone: '555-018-4431',
     designation: 'Mathematics Instructor',
     department: 'Math Dept',
+    classTeacherOf: 'Grade 11-A',
     joiningDate: '2021-08-15',
     monthlySalary: 4500,
     salary: '4500', // backward compatibility
@@ -352,6 +353,7 @@ const INITIAL_STAFF = [
     phone: '555-018-7788',
     designation: 'Physics Instructor',
     department: 'Physics Dept',
+    classTeacherOf: 'Grade 12-A',
     joiningDate: '2022-09-01',
     monthlySalary: 4800,
     salary: '4800',
@@ -400,6 +402,7 @@ const INITIAL_STAFF = [
     phone: '555-018-1144',
     designation: 'English Literature Instructor',
     department: 'English Dept',
+    classTeacherOf: 'Grade 10-B',
     joiningDate: '2021-11-20',
     monthlySalary: 4400,
     salary: '4400',
@@ -432,6 +435,7 @@ const INITIAL_STAFF = [
     phone: '555-018-3366',
     designation: 'Fine Arts Instructor',
     department: 'Art Dept',
+    classTeacherOf: 'Nursery',
     joiningDate: '2023-08-15',
     monthlySalary: 4200,
     salary: '4200',
@@ -448,6 +452,7 @@ const INITIAL_STAFF = [
     phone: '555-018-4477',
     designation: 'Social Sciences Advisor',
     department: 'History Dept',
+    classTeacherOf: 'Grade 5',
     joiningDate: '2020-01-15',
     monthlySalary: 4600,
     salary: '4600',
@@ -487,6 +492,37 @@ const INITIAL_STAFF = [
     remainingSalary: 6000,
     paymentDate: '',
     paymentStatus: 'Pending'
+  }
+];
+
+const INITIAL_LEAVES = [
+  {
+    id: 'LV-78291',
+    applicantName: 'Liam Chen',
+    applicantRole: 'Student',
+    applicantClass: 'Grade 11-A',
+    startDate: '2026-06-05',
+    endDate: '2026-06-06',
+    leaveType: 'Sick Leave',
+    reason: 'Severe dental surgery and recovery.',
+    assignedTo: 'Mr. Marcus Davis',
+    status: 'Approved',
+    remarks: 'Get well soon, Liam. Stay hydrated.',
+    createdAt: '2026-06-01T10:00:00Z'
+  },
+  {
+    id: 'LV-90281',
+    applicantName: 'Mr. Marcus Davis',
+    applicantRole: 'Teacher',
+    applicantClass: 'Math Dept',
+    startDate: '2026-06-10',
+    endDate: '2026-06-12',
+    leaveType: 'Casual Leave',
+    reason: 'Attending regional mathematics education summit.',
+    assignedTo: 'Ms. Clara Vance',
+    status: 'Pending',
+    remarks: '',
+    createdAt: '2026-06-01T11:00:00Z'
   }
 ];
 
@@ -530,6 +566,11 @@ export const DatabaseProvider = ({ children }) => {
   const [staff, setStaff] = useState(() => {
     const data = localStorage.getItem('school_staff');
     return data ? JSON.parse(data) : INITIAL_STAFF;
+  });
+
+  const [leaves, setLeaves] = useState(() => {
+    const data = localStorage.getItem('school_leaves');
+    return data ? JSON.parse(data) : INITIAL_LEAVES;
   });
 
   const [googleSheetsUrl, setGoogleSheetsUrl] = useState(() => {
@@ -577,6 +618,10 @@ export const DatabaseProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem('school_staff', JSON.stringify(staff));
   }, [staff]);
+
+  useEffect(() => {
+    localStorage.setItem('school_leaves', JSON.stringify(leaves));
+  }, [leaves]);
 
   // Log action helper
   const addAuditLog = (user, role, action, details = '') => {
@@ -1494,6 +1539,7 @@ export const DatabaseProvider = ({ children }) => {
     setPayments(INITIAL_PAYMENTS);
     setStudents(INITIAL_STUDENTS);
     setStaff(INITIAL_STAFF);
+    setLeaves(INITIAL_LEAVES);
 
     addAuditLog(
       adminUser.name,
@@ -1503,6 +1549,71 @@ export const DatabaseProvider = ({ children }) => {
     );
 
     pushNotification('System databases reset to default state.', 'warning');
+  };
+
+  // Leaves Operations
+  const applyLeave = (leaveData, currentUser) => {
+    const leaveId = `LV-${Math.floor(10000 + Math.random() * 90000)}`;
+    let assignedTo = 'Ms. Clara Vance';
+    let applicantClass = currentUser.role === 'Student' ? currentUser.linkedStudentName : currentUser.department || currentUser.role;
+
+    if (currentUser.role === 'Student') {
+      const stdRecord = students.find(s => s.name === currentUser.name);
+      const studentClass = stdRecord ? stdRecord.class : 'Grade 11-A';
+      applicantClass = studentClass;
+
+      const classTeacher = staff.find(s => s.classTeacherOf === studentClass);
+      assignedTo = classTeacher ? classTeacher.name : 'Mr. Marcus Davis';
+    }
+
+    const newLeave = {
+      id: leaveId,
+      applicantName: currentUser.name,
+      applicantRole: currentUser.role,
+      applicantClass: applicantClass,
+      startDate: leaveData.startDate,
+      endDate: leaveData.endDate,
+      leaveType: leaveData.leaveType,
+      reason: leaveData.reason,
+      assignedTo: assignedTo,
+      status: 'Pending',
+      remarks: '',
+      createdAt: new Date().toISOString()
+    };
+
+    setLeaves(prev => [newLeave, ...prev]);
+
+    addAuditLog(
+      currentUser.name,
+      currentUser.role,
+      `Submitted Leave Request (${leaveId})`,
+      `Applied for ${leaveData.leaveType} from ${leaveData.startDate} to ${leaveData.endDate}. Routed to ${assignedTo}.`
+    );
+
+    pushNotification(`Leave request ${leaveId} submitted successfully!`, 'success');
+  };
+
+  const updateLeaveStatus = (leaveId, status, remarks, currentUser) => {
+    setLeaves(prev =>
+      prev.map(lv => {
+        if (lv.id === leaveId) {
+          sendEmail(
+            lv.applicantRole === 'Teacher' ? 'davis.math@school.edu' : 'liam.chen@school.edu',
+            `🔔 Leave Request Update - ${status} - ID: ${leaveId}`,
+            `Dear ${lv.applicantName},\n\nYour leave request (${leaveId}) for ${lv.leaveType} (${lv.startDate} to ${lv.endDate}) has been ${status.toUpperCase()} by ${currentUser.name}.\n\nApprover Remarks:\n"${remarks || 'No remarks provided.'}"`
+          );
+
+          return {
+            ...lv,
+            status: status,
+            remarks: remarks
+          };
+        }
+        return lv;
+      })
+    );
+
+    pushNotification(`Leave request ${leaveId} has been ${status.toLowerCase()}!`, 'success');
   };
 
   return (
@@ -1539,7 +1650,10 @@ export const DatabaseProvider = ({ children }) => {
         updateSheetRow,
         deleteSheetRow,
         resetAllData,
-        pushNotification
+        pushNotification,
+        leaves,
+        applyLeave,
+        updateLeaveStatus
       }}
     >
       {children}

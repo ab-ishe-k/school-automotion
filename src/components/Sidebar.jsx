@@ -12,7 +12,8 @@ import {
   LogOut,
   Sparkles,
   BookOpen,
-  CreditCard
+  CreditCard,
+  FileText
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => {
@@ -41,6 +42,7 @@ const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => 
           { id: 'appointments', label: 'My Consultations', icon: Calendar },
           { id: 'queries', label: 'Student Academic Queries', icon: MessageSquare },
           { id: 'complaints', label: 'Class Complaints', icon: AlertTriangle },
+          { id: 'leaves', label: 'Leaves Inbox / Desk', icon: FileText },
           { id: 'integrations', label: 'Google Integrations', icon: Database }
         ];
       case 'Student':
@@ -49,6 +51,7 @@ const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => 
           { id: 'appointments', label: 'Book Appointment', icon: Calendar },
           { id: 'queries', label: 'Raise Query / Tickets', icon: MessageSquare },
           { id: 'complaints', label: 'Infrastructure Grievance', icon: AlertTriangle },
+          { id: 'leaves', label: 'Apply for Leave', icon: FileText },
           { id: 'integrations', label: 'Sync Simulator', icon: Database }
         ];
       case 'Parent':
@@ -83,6 +86,7 @@ const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => 
           { id: 'appointments', label: 'Vice Principal Meetings', icon: Calendar },
           { id: 'queries', label: 'Operations & Routing', icon: MessageSquare },
           { id: 'complaints', label: 'Discipline & Transport', icon: AlertTriangle },
+          { id: 'leaves', label: 'Staff Leaves Desk', icon: FileText },
           { id: 'integrations', label: 'Simulators Sync', icon: Database }
         ];
       default:
