@@ -147,18 +147,35 @@ const IDGenerator = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
+  // Hook to bind camera stream to the video element once it is mounted in the DOM
+  useEffect(() => {
+    if (cameraActive && stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [cameraActive, stream]);
+
   const startCamera = async () => {
     try {
+      // Use ideal constraints for high hardware and browser compatibility
       const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: 300, height: 300, facingMode: 'user' } 
+        video: { 
+          width: { ideal: 640 }, 
+          height: { ideal: 480 }, 
+          facingMode: 'user' 
+        } 
       });
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
       setCameraActive(true);
     } catch (err) {
-      pushNotification('Could not access camera: ' + err.message, 'danger');
+      console.warn("Retrying with simple camera constraints...", err);
+      try {
+        // Fallback constraint
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setStream(mediaStream);
+        setCameraActive(true);
+      } catch (fallbackErr) {
+        pushNotification('Could not access camera: ' + fallbackErr.message, 'danger');
+      }
     }
   };
 
@@ -217,7 +234,7 @@ const IDGenerator = () => {
             <div className="id-chip-holo"></div>
             <div className="id-header">
               <h4>{category === 'student' ? (designation || 'STUDENT').toUpperCase() : category === 'staff' ? (designation || 'FACULTY').toUpperCase() : (visitPurpose || 'VISITOR').toUpperCase()}</h4>
-              <p>BEACON HIGH SCHOOL</p>
+              <p>HIGH SCHOOL</p>
             </div>
             <div className="id-body">
               <div className="id-photo-frame">
@@ -261,7 +278,7 @@ const IDGenerator = () => {
               <div className="id-back-section">
                 <span className="id-back-title">General Terms of Use</span>
                 <p className="id-terms-text">
-                  This card is the property of Beacon High School and is non-transferable. It must be displayed prominently at all times on campus premises. Loss of this card must be reported immediately to the administrative desk.
+                  This card is the property of High School and is non-transferable. It must be displayed prominently at all times on campus premises. Loss of this card must be reported immediately to the administrative desk.
                 </p>
               </div>
 
@@ -277,7 +294,7 @@ const IDGenerator = () => {
                 </div>
                 <div className="id-detail-row">
                   <span>Address:</span>
-                  <span>100 Beacon Ave, New York</span>
+                  <span>100 School Ave, New York</span>
                 </div>
               </div>
 
@@ -594,7 +611,7 @@ const IDGenerator = () => {
                   <div className="id-chip-holo"></div>
                   <div className="id-header">
                     <h4>{category === 'student' ? (designation || 'STUDENT').toUpperCase() : category === 'staff' ? (designation || 'FACULTY').toUpperCase() : (visitPurpose || 'VISITOR').toUpperCase()}</h4>
-                    <p>BEACON HIGH SCHOOL</p>
+                    <p>HIGH SCHOOL</p>
                   </div>
                   
                   {layout === 'portrait' ? (
@@ -691,7 +708,7 @@ const IDGenerator = () => {
                       <div className="id-back-section">
                         <span className="id-back-title">General Terms of Use</span>
                         <p className="id-terms-text">
-                          This card is the property of Beacon High School and is non-transferable. It must be displayed prominently at all times on campus premises. Loss of this card must be reported immediately to the administrative desk.
+                          This card is the property of High School and is non-transferable. It must be displayed prominently at all times on campus premises. Loss of this card must be reported immediately to the administrative desk.
                         </p>
                       </div>
 
@@ -707,7 +724,7 @@ const IDGenerator = () => {
                         </div>
                         <div className="id-detail-row">
                           <span>Address:</span>
-                          <span>100 Beacon Ave, New York</span>
+                          <span>100 School Ave, New York</span>
                         </div>
                       </div>
 
@@ -732,7 +749,7 @@ const IDGenerator = () => {
                         <div className="id-back-section">
                           <span className="id-back-title" style={{ fontSize: '9px' }}>General Terms of Use</span>
                           <p className="id-terms-text" style={{ fontSize: '7.5px' }}>
-                            This card is the property of Beacon High School and is non-transferable. Display prominently on campus.
+                            This card is the property of High School and is non-transferable. Display prominently on campus.
                           </p>
                         </div>
 

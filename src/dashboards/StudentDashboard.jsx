@@ -87,14 +87,30 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
 
   // Staff listing helper
   const getStaffForDept = (dept) => {
-    switch (dept) {
-      case 'Principal': return ['Principal (Dr. Adrian Vance)'];
-      case 'Teachers': return ['Mr. Marcus Davis (Math Teacher)', 'Mrs. Janet Finch (Accounts)', 'Ms. Lee (Admin)'];
-      case 'Counselor': return ['Ms. Clara Thorne (Counselor)'];
-      case 'Accounts department': return ['Mrs. Janet Finch (Accounts Manager)'];
-      case 'Admin office': return ['Admin Staff (Ms. Lee)'];
-      default: return ['Office Desk (Mr. Alan)'];
+    if (dept === 'Principal') {
+      const p = staff.find(s => s.role === 'Principal');
+      return p ? [`Principal (${p.name})`] : ['Principal (Dr. Adrian Vance)'];
     }
+    if (dept === 'Counselor') {
+      const c = staff.find(s => s.role === 'Counselor') || staff.find(s => s.designation?.toLowerCase().includes('counselor'));
+      return c ? [`${c.name} (${c.designation})`] : ['Ms. Clara Thorne (Counselor)'];
+    }
+    if (dept === 'Accounts department') {
+      const a = staff.find(s => s.department === 'Accounts Dept' || s.department?.toLowerCase().includes('account'));
+      return a ? [`${a.name} (${a.designation})`] : ['Mrs. Janet Finch (Accounts Manager)'];
+    }
+    if (dept === 'Admin office') {
+      const a = staff.find(s => s.role === 'Admin Staff' || s.department?.toLowerCase().includes('admin'));
+      return a ? [`${a.name} (${a.designation})`] : ['Admin Staff (Ms. Lee)'];
+    }
+    if (dept === 'Teachers') {
+      const teachers = staff.filter(s => s.role === 'Teacher');
+      if (teachers.length > 0) {
+        return teachers.map(t => `${t.name} (${t.designation})`);
+      }
+      return ['Mr. Marcus Davis (Math Teacher)'];
+    }
+    return ['Office Desk (Mr. Alan)'];
   };
 
   const handleBookApt = (e) => {
@@ -170,7 +186,7 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
         >
           <AlertTriangle size={18} style={{ color: 'var(--danger)', flexShrink: 0 }} />
           <div style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
-            <strong style={{ color: 'var(--danger)' }}>BILLING DUES ALERT WARNING:</strong> Your quarterly tuition fees are currently <strong style={{ textTransform: 'uppercase' }}>{studentRecord.paymentStatus || studentRecord.feeStatus}</strong> (Pending Balance: ${studentRecord.pendingAmount || 0}, Tuition: ${studentRecord.monthlyTuitionFee || 0}, Bus Fee: ${studentRecord.busFee || 0}). Please remind your parent ({studentRecord.parentName || 'Parent'}) to log into the parent portal and clear the outstanding fees.
+            <strong style={{ color: 'var(--danger)' }}>BILLING DUES ALERT WARNING:</strong> Your quarterly tuition fees are currently <strong style={{ textTransform: 'uppercase' }}>{studentRecord.paymentStatus || studentRecord.feeStatus}</strong> (Pending Balance: ${studentRecord.pendingAmount || 0}, Tuition: ${studentRecord.monthlyTuitionFee || 0}, Bus Fee: ${studentRecord.busFee || 0}, Extra-Curricular Fee: ${studentRecord.monthlyExtraCurricularFee || 0}). Please remind your parent ({studentRecord.parentName || 'Parent'}) to log into the parent portal and clear the outstanding fees.
           </div>
         </div>
       )}
@@ -347,7 +363,7 @@ const StudentDashboard = ({ activeSection, setActiveSection }) => {
 
               {studentComplaints.length === 0 ? (
                 <p style={{ padding: '30px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
-                  No complaints logged. Thank you for helping keep Beacon High infrastructure safe.
+                  No complaints logged. Thank you for helping keep High School infrastructure safe.
                 </p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '300px', overflowY: 'auto' }}>

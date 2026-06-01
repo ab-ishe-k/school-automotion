@@ -227,9 +227,10 @@ const INITIAL_STUDENTS = [
     admissionDate: '2026-06-01',
     monthlyTuitionFee: 2000,
     busFee: 500,
-    totalMonthlyFee: 2500,
+    monthlyExtraCurricularFee: 150,
+    totalMonthlyFee: 2650,
     paidAmount: 0,
-    pendingAmount: 2500,
+    pendingAmount: 2650,
     pendingMonths: 1,
     paymentDate: '',
     paymentStatus: 'Pending',
@@ -248,11 +249,78 @@ const INITIAL_STUDENTS = [
     admissionDate: '2026-05-15',
     monthlyTuitionFee: 2000,
     busFee: 0,
-    totalMonthlyFee: 2000,
-    paidAmount: 2000,
+    monthlyExtraCurricularFee: 150,
+    totalMonthlyFee: 2150,
+    paidAmount: 2150,
     pendingAmount: 0,
     pendingMonths: 0,
     paymentDate: '2026-05-28',
+    paymentStatus: 'Paid',
+    feeStatus: 'Paid',
+    remindersActive: false
+  },
+  {
+    id: 'STD-10101',
+    name: 'Baby Aarav',
+    email: 'aarav.nry@school.edu',
+    class: 'Nursery',
+    rollNumber: '01',
+    parentName: 'Mrs. Priya Sharma',
+    parentEmail: 'priya.sharma@gmail.com',
+    parentContact: '555-010-3344',
+    admissionDate: '2026-06-01',
+    monthlyTuitionFee: 1200,
+    busFee: 300,
+    monthlyExtraCurricularFee: 100,
+    totalMonthlyFee: 1600,
+    paidAmount: 1600,
+    pendingAmount: 0,
+    pendingMonths: 0,
+    paymentDate: '2026-06-01',
+    paymentStatus: 'Paid',
+    feeStatus: 'Paid',
+    remindersActive: false
+  },
+  {
+    id: 'STD-20202',
+    name: 'Diya Sharma',
+    email: 'diya.grade5@school.edu',
+    class: 'Grade 5',
+    rollNumber: '08',
+    parentName: 'Mrs. Priya Sharma',
+    parentEmail: 'priya.sharma@gmail.com',
+    parentContact: '555-010-3344',
+    admissionDate: '2026-06-01',
+    monthlyTuitionFee: 1500,
+    busFee: 400,
+    monthlyExtraCurricularFee: 120,
+    totalMonthlyFee: 2020,
+    paidAmount: 0,
+    pendingAmount: 2020,
+    pendingMonths: 1,
+    paymentDate: '',
+    paymentStatus: 'Pending',
+    feeStatus: 'Outstanding',
+    remindersActive: true
+  },
+  {
+    id: 'STD-30303',
+    name: 'John Doe',
+    email: 'john.doe@school.edu',
+    class: 'Grade 12-A',
+    rollNumber: '15',
+    parentName: 'Mr. Richard Doe',
+    parentEmail: 'richard.doe@gmail.com',
+    parentContact: '555-019-8877',
+    admissionDate: '2026-06-01',
+    monthlyTuitionFee: 2500,
+    busFee: 500,
+    monthlyExtraCurricularFee: 200,
+    totalMonthlyFee: 3200,
+    paidAmount: 3200,
+    pendingAmount: 0,
+    pendingMonths: 0,
+    paymentDate: '2026-06-01',
     paymentStatus: 'Paid',
     feeStatus: 'Paid',
     remindersActive: false
@@ -273,6 +341,118 @@ const INITIAL_STAFF = [
     salary: '4500', // backward compatibility
     paidSalary: 0,
     remainingSalary: 4500,
+    paymentDate: '',
+    paymentStatus: 'Pending'
+  },
+  {
+    id: 'STF-30301',
+    name: 'Dr. Sarah Jenkins',
+    role: 'Teacher',
+    email: 'jenkins.physics@school.edu',
+    phone: '555-018-7788',
+    designation: 'Physics Instructor',
+    department: 'Physics Dept',
+    joiningDate: '2022-09-01',
+    monthlySalary: 4800,
+    salary: '4800',
+    paidSalary: 0,
+    remainingSalary: 4800,
+    paymentDate: '',
+    paymentStatus: 'Pending'
+  },
+  {
+    id: 'STF-30302',
+    name: 'Dr. Robert Boyle',
+    role: 'Teacher',
+    email: 'boyle.chem@school.edu',
+    phone: '555-018-9922',
+    designation: 'Chemistry Instructor',
+    department: 'Chemistry Dept',
+    joiningDate: '2023-01-10',
+    monthlySalary: 4700,
+    salary: '4700',
+    paidSalary: 0,
+    remainingSalary: 4700,
+    paymentDate: '',
+    paymentStatus: 'Pending'
+  },
+  {
+    id: 'STF-30303',
+    name: 'Mrs. Rosalind Franklin',
+    role: 'Teacher',
+    email: 'franklin.bio@school.edu',
+    phone: '555-018-8833',
+    designation: 'Biology Instructor',
+    department: 'Biology Dept',
+    joiningDate: '2020-06-15',
+    monthlySalary: 4900,
+    salary: '4900',
+    paidSalary: 0,
+    remainingSalary: 4900,
+    paymentDate: '',
+    paymentStatus: 'Pending'
+  },
+  {
+    id: 'STF-30304',
+    name: 'Ms. Emily Dickinson',
+    role: 'Teacher',
+    email: 'dickinson.english@school.edu',
+    phone: '555-018-1144',
+    designation: 'English Literature Instructor',
+    department: 'English Dept',
+    joiningDate: '2021-11-20',
+    monthlySalary: 4400,
+    salary: '4400',
+    paidSalary: 0,
+    remainingSalary: 4400,
+    paymentDate: '',
+    paymentStatus: 'Pending'
+  },
+  {
+    id: 'STF-30305',
+    name: 'Mr. Alan Turing',
+    role: 'Teacher',
+    email: 'turing.cs@school.edu',
+    phone: '555-018-2255',
+    designation: 'Computer Science Instructor',
+    department: 'Computer Science Dept',
+    joiningDate: '2019-08-01',
+    monthlySalary: 5200,
+    salary: '5200',
+    paidSalary: 0,
+    remainingSalary: 5200,
+    paymentDate: '',
+    paymentStatus: 'Pending'
+  },
+  {
+    id: 'STF-30306',
+    name: 'Mr. Vincent van Gogh',
+    role: 'Teacher',
+    email: 'gogh.art@school.edu',
+    phone: '555-018-3366',
+    designation: 'Fine Arts Instructor',
+    department: 'Art Dept',
+    joiningDate: '2023-08-15',
+    monthlySalary: 4200,
+    salary: '4200',
+    paidSalary: 0,
+    remainingSalary: 4200,
+    paymentDate: '',
+    paymentStatus: 'Pending'
+  },
+  {
+    id: 'STF-30307',
+    name: 'Mrs. Eleanor Roosevelt',
+    role: 'Teacher',
+    email: 'roosevelt.hist@school.edu',
+    phone: '555-018-4477',
+    designation: 'Social Sciences Advisor',
+    department: 'History Dept',
+    joiningDate: '2020-01-15',
+    monthlySalary: 4600,
+    salary: '4600',
+    paidSalary: 0,
+    remainingSalary: 4600,
     paymentDate: '',
     paymentStatus: 'Pending'
   },
@@ -938,7 +1118,7 @@ export const DatabaseProvider = ({ children }) => {
         sendEmail(
           std.parentEmail || 'parent@school.edu',
           `⚠️ ACTION REQUIRED: Outstanding Student Fees Reminder - ${std.name}`,
-          `Dear ${std.parentName},\n\nThis is an automated 7-day security reminder regarding outstanding student accounts for ${std.name} (${std.class}).\n\nFee Breakdown:\n========================\n- Tuition Fee Dues: $${std.monthlyTuitionFee}\n- Transport Fee Dues: $${std.busFee}\n- Total Outstanding Dues: $${std.pendingAmount}\n- Overdue Account Months: ${std.pendingMonths} Month(s)\n========================\n\nPlease click the link below to resolve outstanding fees:\nhttp://localhost:5173/parent-billing\n\nIf you have already processed your payments, please disregard this alert. Thank you.`
+          `Dear ${std.parentName},\n\nThis is an automated 7-day security reminder regarding outstanding student accounts for ${std.name} (${std.class}).\n\nFee Breakdown:\n========================\n- Tuition Fee Dues: $${std.monthlyTuitionFee}\n- Transport Fee Dues: $${std.busFee}\n- Extra-Curricular Fee Dues: $${std.monthlyExtraCurricularFee || 0}\n- Total Outstanding Dues: $${std.pendingAmount}\n- Overdue Account Months: ${std.pendingMonths} Month(s)\n========================\n\nPlease click the link below to resolve outstanding fees:\nhttp://localhost:5173/parent-billing\n\nIf you have already processed your payments, please disregard this alert. Thank you.`
         );
       }
     });
@@ -1095,7 +1275,7 @@ export const DatabaseProvider = ({ children }) => {
       sendEmail(
         updatedTch.email,
         `💸 Salary Slip & Credit Advice - PAID - ID: ${payId}`,
-        `Dear ${updatedTch.name},\n\nWe are pleased to inform you that your monthly salary payout of $${amount} has been successfully processed.\n\nSalary Slip Details:\n========================\nReference Payout ID: ${payId}\nAmount Paid: $${amount}\nRemaining Salary: $${updatedTch.remainingSalary}\nCredit Date: ${new Date().toLocaleDateString()}\nBank Reference ID: ${txId}\n========================\n\nPlease check your bank statement. Thank you for your continued dedication to Beacon High School.`
+        `Dear ${updatedTch.name},\n\nWe are pleased to inform you that your monthly salary payout of $${amount} has been successfully processed.\n\nSalary Slip Details:\n========================\nReference Payout ID: ${payId}\nAmount Paid: $${amount}\nRemaining Salary: $${updatedTch.remainingSalary}\nCredit Date: ${new Date().toLocaleDateString()}\nBank Reference ID: ${txId}\n========================\n\nPlease check your bank statement. Thank you for your continued dedication to High School.`
       );
 
       addAuditLog(
@@ -1130,7 +1310,8 @@ export const DatabaseProvider = ({ children }) => {
 
     const tuition = Number(studentData.monthlyTuitionFee || 2000);
     const bus = Number(studentData.busFee || 0);
-    const total = tuition + bus;
+    const extra = Number(studentData.monthlyExtraCurricularFee || 150);
+    const total = tuition + bus + extra;
 
     const newStudent = {
       id: stdId,
@@ -1144,6 +1325,7 @@ export const DatabaseProvider = ({ children }) => {
       admissionDate: studentData.admissionDate || new Date().toISOString().split('T')[0],
       monthlyTuitionFee: tuition,
       busFee: bus,
+      monthlyExtraCurricularFee: extra,
       totalMonthlyFee: total,
       paidAmount: 0,
       pendingAmount: total,
@@ -1165,7 +1347,7 @@ export const DatabaseProvider = ({ children }) => {
 
     sendEmail(
       studentData.parentEmail || 'parent@school.edu',
-      `🔔 Beacon High School: Student Admission & Dues Setup - ID: ${stdId}`,
+      `🔔 High School: Student Admission & Dues Setup - ID: ${stdId}`,
       `Dear ${studentData.parentName || 'Parent'},\n\nWelcome! Your child's (${studentData.name}) admission enrollment is complete.\n\nEnrollment Summary:\n========================\nStudent ID: ${stdId}\nClass Room: ${newStudent.class}\nAdmission Date: ${newStudent.admissionDate}\n\nOutstanding Billing Accounts:\n- Tuition Dues: $${tuition}/month\n- Transportation Dues: $${bus}/month\n- Monthly Total Fee Dues: $${total}\n========================\n\nPlease log into the Parent Billing Portal to clear your outstanding dues. Automated weekly reminders have been activated.`
     );
 
@@ -1214,7 +1396,7 @@ export const DatabaseProvider = ({ children }) => {
     sendEmail(
       teacherData.email,
       `🤝 Welcome to the Faculty: Offer of Appointment - ID: ${staffId}`,
-      `Dear ${teacherData.name},\n\nWe are pleased to formally welcome you to the advisory team at Beacon High School!\n\nEmployment Summary:\n========================\nStaff ID: ${staffId}\nAdvisory Role: ${newStaff.role}\nDepartment: ${newStaff.department}\nContract Salary: $${baseSalary}/month\nJoining Date: ${newStaff.joiningDate}\n========================\n\nPlease log into the staff portal using your unique temporary onboarding ID to set up your permanent credentials.`
+      `Dear ${teacherData.name},\n\nWe are pleased to formally welcome you to the advisory team at High School!\n\nEmployment Summary:\n========================\nStaff ID: ${staffId}\nAdvisory Role: ${newStaff.role}\nDepartment: ${newStaff.department}\nContract Salary: $${baseSalary}/month\nJoining Date: ${newStaff.joiningDate}\n========================\n\nPlease log into the staff portal using your unique temporary onboarding ID to set up your permanent credentials.`
     );
 
     pushNotification(`Successfully hired staff member: ${teacherData.name}`, 'success');

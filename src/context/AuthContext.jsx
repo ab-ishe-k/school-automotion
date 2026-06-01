@@ -40,7 +40,7 @@ export const INITIAL_USERS = [
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
-    description: 'Executive principal of Beacon High School. Manages calendars, escalations, and audits.'
+    description: 'Executive principal of High School. Manages calendars, escalations, and audits.'
   },
   {
     id: 'usr-teacher-20192',
@@ -275,9 +275,9 @@ export const AuthProvider = ({ children }) => {
     const recoveryEmail = {
       id: `eml-${Math.floor(100000 + Math.random() * 900000)}`,
       to: email,
-      subject: '🔒 Beacon Security Desk: Password Reset Link',
-      body: `Dear ${user.name},\n\nWe received a request to securely reset the password for your Beacon ERP account.\n\nPlease click the link below to overwrite your credentials and create a new secure password:\n\nhttp://localhost:5173/reset-password?token=${recoveryToken}&email=${email}\n\nThis token is valid for 1 hour. If you did not request this, please notify the IT Administration office immediately.\n\nWarm regards,\nIT Security Desk\nBeacon High School`,
-      sender: 'IT Security Desk <security@beacon.edu>',
+      subject: '🔒 Security Desk: Password Reset Link',
+      body: `Dear ${user.name},\n\nWe received a request to securely reset the password for your ERP account.\n\nPlease click the link below to overwrite your credentials and create a new secure password:\n\nhttp://localhost:5173/reset-password?token=${recoveryToken}&email=${email}\n\nThis token is valid for 1 hour. If you did not request this, please notify the IT Administration office immediately.\n\nWarm regards,\nIT Security Desk\nHigh School`,
+      sender: 'IT Security Desk <security@highschool.edu>',
       date: new Date().toISOString(),
       isRead: false
     };

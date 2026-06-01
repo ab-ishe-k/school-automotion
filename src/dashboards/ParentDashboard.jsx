@@ -23,6 +23,7 @@ const ParentDashboard = ({ activeSection, setActiveSection }) => {
     queries, 
     complaints, 
     students,
+    staff,
     payFee,
     bookAppointment, 
     cancelAppointment, 
@@ -362,10 +363,10 @@ const ParentDashboard = ({ activeSection, setActiveSection }) => {
                     <td>
                       {wardRecord.busFee === 0 ? (
                         <span className="status-badge approved">NOT ENROLLED</span>
-                      ) : wardRecord.paidAmount >= (wardRecord.totalMonthlyFee || 0) ? (
+                      ) : wardRecord.paidAmount >= (wardRecord.monthlyTuitionFee || 0) + (wardRecord.busFee || 0) ? (
                         <span className="status-badge approved">PAID SUCCESSFUL</span>
                       ) : wardRecord.paidAmount > (wardRecord.monthlyTuitionFee || 0) ? (
-                        <span className="status-badge pending">PARTIAL PAY (${(wardRecord.totalMonthlyFee || 0) - wardRecord.paidAmount} due)</span>
+                        <span className="status-badge pending">PARTIAL PAY (${(wardRecord.monthlyTuitionFee || 0) + (wardRecord.busFee || 0) - wardRecord.paidAmount} due)</span>
                       ) : (
                         <span className="status-badge pending">OUTSTANDING DUES</span>
                       )}
@@ -373,7 +374,7 @@ const ParentDashboard = ({ activeSection, setActiveSection }) => {
                     <td>
                       {wardRecord.busFee === 0 ? (
                         <span style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}>—</span>
-                      ) : wardRecord.paidAmount >= (wardRecord.totalMonthlyFee || 0) ? (
+                      ) : wardRecord.paidAmount >= (wardRecord.monthlyTuitionFee || 0) + (wardRecord.busFee || 0) ? (
                         <span style={{ color: 'var(--success)', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <CheckCircle size={14} /> Receipts Sent
                         </span>
@@ -383,11 +384,46 @@ const ParentDashboard = ({ activeSection, setActiveSection }) => {
                           style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
                           onClick={() => setCheckoutItem({ 
                             type: 'Bus Fee', 
-                            amount: String((wardRecord.totalMonthlyFee || 0) - Math.max(wardRecord.monthlyTuitionFee || 0, wardRecord.paidAmount)) 
+                            amount: String((wardRecord.monthlyTuitionFee || 0) + (wardRecord.busFee || 0) - Math.max(wardRecord.monthlyTuitionFee || 0, wardRecord.paidAmount)) 
                           })}
                         >
                           <CreditCard size={12} />
                           Pay Bus Fee
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+
+                  {/* Extra-Curricular Activities Fee Item */}
+                  <tr>
+                    <td style={{ fontWeight: '600' }}>Quarterly Extra-Curricular Activities Fee</td>
+                    <td>Q2 (June - Aug 2026)</td>
+                    <td style={{ fontWeight: '700', fontSize: '15px' }}>${wardRecord.monthlyExtraCurricularFee || 0}</td>
+                    <td>
+                      {wardRecord.paidAmount >= (wardRecord.totalMonthlyFee || 0) ? (
+                        <span className="status-badge approved">PAID SUCCESSFUL</span>
+                      ) : wardRecord.paidAmount > (wardRecord.monthlyTuitionFee || 0) + (wardRecord.busFee || 0) ? (
+                        <span className="status-badge pending">PARTIAL PAY (${(wardRecord.totalMonthlyFee || 0) - wardRecord.paidAmount} due)</span>
+                      ) : (
+                        <span className="status-badge pending">OUTSTANDING DUES</span>
+                      )}
+                    </td>
+                    <td>
+                      {wardRecord.paidAmount >= (wardRecord.totalMonthlyFee || 0) ? (
+                        <span style={{ color: 'var(--success)', fontWeight: '700', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <CheckCircle size={14} /> Receipts Sent
+                        </span>
+                      ) : (
+                        <button 
+                          className="btn btn-primary" 
+                          style={{ padding: '6px 12px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          onClick={() => setCheckoutItem({ 
+                            type: 'Extra-Curricular Fee', 
+                            amount: String((wardRecord.totalMonthlyFee || 0) - Math.max((wardRecord.monthlyTuitionFee || 0) + (wardRecord.busFee || 0), wardRecord.paidAmount)) 
+                          })}
+                        >
+                          <CreditCard size={12} />
+                          Pay Extra-Curricular Dues
                         </button>
                       )}
                     </td>
@@ -411,10 +447,11 @@ const ParentDashboard = ({ activeSection, setActiveSection }) => {
                 <div className="form-group">
                   <label>Staff Contact Person</label>
                   <select className="filter-input" value={aptWith} onChange={e => setAptWith(e.target.value)}>
-                    <option value="Mr. Marcus Davis (Math Teacher)">Mr. Marcus Davis (Math Instructor)</option>
-                    <option value="Principal (Dr. Adrian Vance)">Dr. Adrian Vance (Principal)</option>
-                    <option value="Mrs. Janet Finch (Accounts Manager)">Mrs. Janet Finch (Accounts)</option>
-                    <option value="Ms. Clara Thorne (Counselor)">Ms. Clara Thorne (Counselor)</option>
+                    {staff.map(member => (
+                      <option key={member.id} value={`${member.name} (${member.designation})`}>
+                        {member.name} ({member.designation})
+                      </option>
+                    ))}
                   </select>
                 </div>
 

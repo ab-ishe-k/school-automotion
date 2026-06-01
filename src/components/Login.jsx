@@ -166,7 +166,7 @@ const Login = () => {
               <BookOpen size={20} />
             </div>
             <span style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '-0.5px' }}>
-              BEACON HIGH
+              HIGH SCHOOL
             </span>
           </div>
 

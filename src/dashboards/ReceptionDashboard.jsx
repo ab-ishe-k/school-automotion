@@ -371,7 +371,7 @@ const ReceptionDashboard = ({ activeSection, setActiveSection }) => {
                 <select className="filter-input" value={guestRole} onChange={e => setGuestRole(e.target.value)}>
                   <option value="Parent">Parent / Guardian</option>
                   <option value="Student">Visitor Student</option>
-                  <option value="Alumni">Beacon Alumni</option>
+                  <option value="Alumni">School Alumni</option>
                   <option value="Guest Inspector">Inspector / Board Auditor</option>
                 </select>
               </div>

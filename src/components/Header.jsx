@@ -8,13 +8,9 @@ import {
   Moon, 
   CheckCheck, 
   AlertCircle,
-<<<<<<< HEAD
   Clock,
   Sparkles,
   User
-=======
-  Sparkles
->>>>>>> f8525f1bc74ea25ab961903583e417d29aa705bb
 } from 'lucide-react';
 
 const Header = ({ toggleSidebar, theme, setTheme }) => {

@@ -123,7 +123,7 @@ const OnboardingSetup = () => {
         <div className="login-brand-side" style={{ padding: '30px', background: 'var(--primary)' }}>
           <div className="login-brand-logo">
             <BookOpen size={24} style={{ color: 'var(--accent)' }} />
-            <span style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '1px' }}>BEACON HIGH</span>
+            <span style={{ fontSize: '18px', fontWeight: '800', letterSpacing: '1px' }}>HIGH SCHOOL</span>
           </div>
           <div style={{ marginTop: '20px' }}>
             <h1 style={{ fontSize: '20px', margin: 0 }}>Onboarding Security Portal</h1>

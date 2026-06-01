@@ -148,7 +148,7 @@ function doPost(e) {
       } else if (sheetName === 'payments') {
         rowValues = [row.id, row.userName, row.role, row.paymentType, row.amount, row.date, row.status, row.transactionId];
       } else if (sheetName === 'students') {
-        rowValues = [row.id, row.name, row.email, row.class, row.rollNumber || '', row.parentName || '', row.parentEmail || '', row.parentContact || '', row.admissionDate || '', row.monthlyTuitionFee || 0, row.busFee || 0, row.totalMonthlyFee || 0, row.paidAmount || 0, row.pendingAmount || 0, row.pendingMonths || 0, row.paymentDate || '', row.paymentStatus || 'Pending'];
+        rowValues = [row.id, row.name, row.email, row.class, row.rollNumber || '', row.parentName || '', row.parentEmail || '', row.parentContact || '', row.admissionDate || '', row.monthlyTuitionFee || 0, row.busFee || 0, row.monthlyExtraCurricularFee || 0, row.totalMonthlyFee || 0, row.paidAmount || 0, row.pendingAmount || 0, row.pendingMonths || 0, row.paymentDate || '', row.paymentStatus || 'Pending'];
       } else if (sheetName === 'staff') {
         rowValues = [row.id, row.name, row.role, row.email, row.phone || '', row.designation || '', row.department || '', row.joiningDate || row.dateJoined || '', row.monthlySalary || row.salary || 0, row.paidSalary || 0, row.remainingSalary || 0, row.paymentDate || '', row.paymentStatus || 'Pending'];
       }
@@ -397,6 +397,7 @@ function doPost(e) {
                     <th>Admit Date</th>
                     <th>Tuition ($)</th>
                     <th>Bus Fee ($)</th>
+                    <th>Extra ($)</th>
                     <th>Total ($)</th>
                     <th>Paid ($)</th>
                     <th>Pending ($)</th>
@@ -511,6 +512,7 @@ function doPost(e) {
                           <td>{row.admissionDate || '—'}</td>
                           <td>${row.monthlyTuitionFee}</td>
                           <td>${row.busFee}</td>
+                          <td>${row.monthlyExtraCurricularFee || 0}</td>
                           <td style={{ fontWeight: '700' }}>${row.totalMonthlyFee}</td>
                           <td style={{ color: 'var(--success)', fontWeight: '600' }}>${row.paidAmount}</td>
                           <td style={{ color: row.pendingAmount > 0 ? 'var(--danger)' : 'var(--text-secondary)', fontWeight: '600' }}>${row.pendingAmount}</td>

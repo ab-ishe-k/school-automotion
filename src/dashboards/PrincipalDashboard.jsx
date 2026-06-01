@@ -527,7 +527,7 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
                 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                 onClick={() => handleExportCSV(
                   filteredStudents, 
-                  ['id', 'name', 'class', 'rollNumber', 'parentName', 'parentEmail', 'parentContact', 'monthlyTuitionFee', 'busFee', 'totalMonthlyFee', 'paidAmount', 'pendingAmount', 'paymentStatus'], 
+                  ['id', 'name', 'class', 'rollNumber', 'parentName', 'parentEmail', 'parentContact', 'monthlyTuitionFee', 'busFee', 'monthlyExtraCurricularFee', 'totalMonthlyFee', 'paidAmount', 'pendingAmount', 'paymentStatus'], 
                   'student_ledger'
                 )}
               >
@@ -585,6 +585,7 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
                     <th>Parent Contact</th>
                     <th>Tuition Fee ($)</th>
                     <th>Bus Fee ($)</th>
+                    <th>Extra Fee ($)</th>
                     <th>Total Fee ($)</th>
                     <th>Paid ($)</th>
                     <th>Pending ($)</th>
@@ -594,7 +595,7 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
                 <tbody>
                   {filteredStudents.length === 0 ? (
                     <tr>
-                      <td colSpan="12" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
+                      <td colSpan="13" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-tertiary)' }}>
                         No students match search filters.
                       </td>
                     </tr>
@@ -609,6 +610,7 @@ const PrincipalDashboard = ({ activeSection, setActiveSection }) => {
                         <td>{std.parentContact || '—'}</td>
                         <td>${std.monthlyTuitionFee}</td>
                         <td>${std.busFee}</td>
+                        <td>${std.monthlyExtraCurricularFee || 0}</td>
                         <td style={{ fontWeight: '700' }}>${std.totalMonthlyFee}</td>
                         <td style={{ color: 'var(--success)', fontWeight: '600' }}>${std.paidAmount || 0}</td>
                         <td style={{ color: 'var(--danger)', fontWeight: '600' }}>${std.pendingAmount || 0}</td>

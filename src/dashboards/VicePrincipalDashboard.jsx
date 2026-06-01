@@ -452,6 +452,7 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
                   <th>Class</th>
                   <th>Tuition Dues</th>
                   <th>Bus Dues</th>
+                  <th>Extra Dues</th>
                   <th>Total Monthly</th>
                   <th>Paid Amount</th>
                   <th>Pending Balance</th>
@@ -472,6 +473,7 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
                       <td>{std.class}</td>
                       <td>${std.monthlyTuitionFee}</td>
                       <td>${std.busFee}</td>
+                      <td>${std.monthlyExtraCurricularFee || 0}</td>
                       <td style={{ fontWeight: '700' }}>${std.totalMonthlyFee}</td>
                       <td style={{ color: 'var(--success)' }}>${std.paidAmount || 0}</td>
                       <td style={{ color: 'var(--danger)', fontWeight: '700' }}>${std.pendingAmount || 0}</td>
@@ -540,6 +542,7 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
                       <th>Contact Phone</th>
                       <th>Tuition Fee ($)</th>
                       <th>Bus Fee ($)</th>
+                      <th>Extra Fee ($)</th>
                       <th>Paid ($)</th>
                       <th>Action</th>
                     </tr>
@@ -554,6 +557,7 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
                         <td>{std.parentContact || '—'}</td>
                         <td>${std.monthlyTuitionFee}</td>
                         <td>${std.busFee}</td>
+                        <td>${std.monthlyExtraCurricularFee || 0}</td>
                         <td>${std.paidAmount || 0}</td>
                         <td>
                           <button 
@@ -566,7 +570,8 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
                                 parentContact: std.parentContact || '',
                                 parentEmail: std.parentEmail || '',
                                 monthlyTuitionFee: std.monthlyTuitionFee,
-                                busFee: std.busFee
+                                busFee: std.busFee,
+                                monthlyExtraCurricularFee: std.monthlyExtraCurricularFee || 0
                               });
                             }}
                           >
@@ -746,7 +751,7 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
                   />
                 </div>
 
-                <div className="form-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                   <div className="form-group">
                     <label>Tuition Fee Rate ($)</label>
                     <input 
@@ -756,11 +761,12 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
                       value={editFields.monthlyTuitionFee || 0}
                       onChange={e => setEditFields(prev => {
                         const val = Number(e.target.value);
+                        const newTotal = val + Number(prev.busFee || 0) + Number(prev.monthlyExtraCurricularFee || 0);
                         return { 
                           ...prev, 
                           monthlyTuitionFee: val,
-                          totalMonthlyFee: val + Number(prev.busFee || 0),
-                          pendingAmount: val + Number(prev.busFee || 0) - Number(editingItem.data.paidAmount || 0)
+                          totalMonthlyFee: newTotal,
+                          pendingAmount: newTotal - Number(editingItem.data.paidAmount || 0)
                         };
                       })}
                     />
@@ -775,11 +781,32 @@ const VicePrincipalDashboard = ({ activeSection, setActiveSection }) => {
                       value={editFields.busFee || 0}
                       onChange={e => setEditFields(prev => {
                         const val = Number(e.target.value);
+                        const newTotal = val + Number(prev.monthlyTuitionFee || 0) + Number(prev.monthlyExtraCurricularFee || 0);
                         return { 
                           ...prev, 
                           busFee: val,
-                          totalMonthlyFee: val + Number(prev.monthlyTuitionFee || 0),
-                          pendingAmount: val + Number(prev.monthlyTuitionFee || 0) - Number(editingItem.data.paidAmount || 0)
+                          totalMonthlyFee: newTotal,
+                          pendingAmount: newTotal - Number(editingItem.data.paidAmount || 0)
+                        };
+                      })}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Extra Fee Rate ($)</label>
+                    <input 
+                      type="number" 
+                      className="form-input" 
+                      required
+                      value={editFields.monthlyExtraCurricularFee || 0}
+                      onChange={e => setEditFields(prev => {
+                        const val = Number(e.target.value);
+                        const newTotal = val + Number(prev.monthlyTuitionFee || 0) + Number(prev.busFee || 0);
+                        return { 
+                          ...prev, 
+                          monthlyExtraCurricularFee: val,
+                          totalMonthlyFee: newTotal,
+                          pendingAmount: newTotal - Number(editingItem.data.paidAmount || 0)
                         };
                       })}
                     />

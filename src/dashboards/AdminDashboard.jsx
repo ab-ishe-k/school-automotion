@@ -3,6 +3,7 @@ import { useDatabase } from '../context/DatabaseContext';
 import { useAuth } from '../context/AuthContext';
 import DashboardCards from '../components/DashboardCards';
 import Modal from '../components/Modal';
+import { CLASSES, DEPARTMENTS } from '../constants';
 import { 
   Edit, 
   Trash2, 
@@ -76,6 +77,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
   const [parentContact, setParentContact] = useState('');
   const [tuitionFee, setTuitionFee] = useState('2000');
   const [busFee, setBusFee] = useState('500');
+  const [extraCurricularFee, setExtraCurricularFee] = useState('150');
   const [rollNum, setRollNum] = useState('');
 
   // Teacher Recruitment Form states
@@ -172,6 +174,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
       parentContact,
       monthlyTuitionFee: Number(tuitionFee),
       busFee: Number(busFee),
+      monthlyExtraCurricularFee: Number(extraCurricularFee),
       rollNumber: rollNum
     }, currentUser);
 
@@ -183,6 +186,7 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
     setParentContact('');
     setTuitionFee('2000');
     setBusFee('500');
+    setExtraCurricularFee('150');
     setRollNum('');
     setActiveTab('database');
     setActiveSheet('students');
@@ -726,14 +730,24 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 </div>
               </div>
 
+              <div className="form-group">
+                <label>Monthly Extra-Curricular Activities Fee ($)</label>
+                <input 
+                  type="number" 
+                  className="form-input" 
+                  value={extraCurricularFee}
+                  onChange={e => setExtraCurricularFee(e.target.value)}
+                  required
+                />
+              </div>
+
               <div className="form-grid">
                 <div className="form-group">
                   <label>Assigned Class</label>
                   <select className="filter-input" value={stdClass} onChange={e => setStdClass(e.target.value)}>
-                    <option value="Grade 9-A">Grade 9-A</option>
-                    <option value="Grade 10-B">Grade 10-B</option>
-                    <option value="Grade 11-A">Grade 11-A</option>
-                    <option value="Grade 12-A">Grade 12-A</option>
+                    {CLASSES.map(cls => (
+                      <option key={cls} value={cls}>{cls}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -825,12 +839,9 @@ const AdminDashboard = ({ activeSection, setActiveSection }) => {
                 <div className="form-group">
                   <label>Faculty Advisory Dept</label>
                   <select className="filter-input" value={tchDept} onChange={e => setTchDept(e.target.value)}>
-                    <option value="Math Dept">Math Dept</option>
-                    <option value="Physics Dept">Physics Dept</option>
-                    <option value="English Dept">English Dept</option>
-                    <option value="Accounts Dept">Accounts Office</option>
-                    <option value="Principal Office">Principal Office</option>
-                    <option value="VP Office">VP Office</option>
+                    {DEPARTMENTS.map(dept => (
+                      <option key={dept} value={dept}>{dept}</option>
+                    ))}
                   </select>
                 </div>
 

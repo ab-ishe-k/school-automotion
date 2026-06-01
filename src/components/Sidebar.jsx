@@ -114,7 +114,7 @@ const Sidebar = ({ isOpen, toggleSidebar, activeSection, setActiveSection }) => 
             <BookOpen size={20} />
           </div>
           <div className="logo-text">
-            <h2>Beacon High</h2>
+            <h2>High School</h2>
             <p>Automation Suite</p>
           </div>
         </div>
