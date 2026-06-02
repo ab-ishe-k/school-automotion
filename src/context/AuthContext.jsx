@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiRequest } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -11,23 +12,7 @@ export const hashPassword = async (password) => {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-/**
- * SECURITY: Temporary passwords are no longer hardcoded in source code.
- * In production, these would be generated server-side and sent via secure channel.
- * For this demo app, we read them from env variables (set in .env.local) or fall
- * back to safe generic defaults that are clearly labelled as demo-only.
- *
- * Create a .env.local file (git-ignored) with:
- *   VITE_DEMO_PASS_PRINCIPAL=YourSecurePass1
- *   VITE_DEMO_PASS_TEACHER=YourSecurePass2
- *   ... etc.
- */
-const env = (key, fallback) =>
-  typeof import.meta !== 'undefined' && import.meta.env[key]
-    ? import.meta.env[key]
-    : fallback;
-
-export const INITIAL_USERS = [
+const INITIAL_USERS = [
   {
     id: 'usr-principal-90281',
     name: 'Dr. Adrian Vance',
@@ -36,7 +21,7 @@ export const INITIAL_USERS = [
     linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150',
     tempId: 'TEMP-PRN-90281',
-    tempPassword: env('VITE_DEMO_PASS_PRINCIPAL', 'Demo-PRN-2026'),
+    tempPassword: 'Demo-PRN-2026',
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -50,7 +35,7 @@ export const INITIAL_USERS = [
     linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
     tempId: 'TEMP-TCH-20192',
-    tempPassword: env('VITE_DEMO_PASS_TEACHER', 'Demo-TCH-2026'),
+    tempPassword: 'Demo-TCH-2026',
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -64,7 +49,7 @@ export const INITIAL_USERS = [
     linkedStudentName: 'Liam Chen',
     avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150',
     tempId: 'TEMP-STD-88201',
-    tempPassword: env('VITE_DEMO_PASS_STUDENT', 'Demo-STD-2026'),
+    tempPassword: 'Demo-STD-2026',
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -75,10 +60,10 @@ export const INITIAL_USERS = [
     name: 'Sarah Smith',
     role: 'Parent',
     email: 'sarah.smith@school.edu',
-    linkedStudentName: 'Liam Chen', // FIX: parent-student mapping now explicit
+    linkedStudentName: 'Liam Chen',
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150',
     tempId: 'TEMP-PAR-30821',
-    tempPassword: env('VITE_DEMO_PASS_PARENT', 'Demo-PAR-2026'),
+    tempPassword: 'Demo-PAR-2026',
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -92,7 +77,7 @@ export const INITIAL_USERS = [
     linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150',
     tempId: 'TEMP-ADM-10822',
-    tempPassword: env('VITE_DEMO_PASS_ADMIN', 'Demo-ADM-2026'),
+    tempPassword: 'Demo-ADM-2026',
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -106,7 +91,7 @@ export const INITIAL_USERS = [
     linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
     tempId: 'TEMP-REC-00192',
-    tempPassword: env('VITE_DEMO_PASS_RECEPTION', 'Demo-REC-2026'),
+    tempPassword: 'Demo-REC-2026',
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -120,7 +105,7 @@ export const INITIAL_USERS = [
     linkedStudentName: null,
     avatar: 'https://images.unsplash.com/photo-1594744803329-e58b31de215f?w=150',
     tempId: 'TEMP-VPS-10291',
-    tempPassword: env('VITE_DEMO_PASS_VP', 'Demo-VPS-2026'),
+    tempPassword: 'Demo-VPS-2026',
     permanentUsername: '',
     passwordHash: '',
     isSetupCompleted: false,
@@ -130,22 +115,45 @@ export const INITIAL_USERS = [
 
 export const AuthProvider = ({ children }) => {
   const [users, setUsers] = useState(() => {
-    const data = localStorage.getItem('school_users');
-    return data ? JSON.parse(data) : INITIAL_USERS;
+    try {
+      const data = localStorage.getItem('school_users');
+      return data ? JSON.parse(data) : INITIAL_USERS;
+    } catch (e) {
+      console.warn('Error parsing school_users from localStorage, resetting to default.', e);
+      return INITIAL_USERS;
+    }
   });
 
   const [currentUser, setCurrentUser] = useState(null);
   const [sessionExpiredAlert, setSessionExpiredAlert] = useState(false);
+  const [isServerMode, setIsServerMode] = useState(false);
 
-  // Sync users database
+  // Sync users database locally as fallback
   useEffect(() => {
     localStorage.setItem('school_users', JSON.stringify(users));
   }, [users]);
 
-  // Session expiry sweep on load/refresh
-  // FIX: was using stale session.user object — now looks up fresh user from users array
-  // to pick up any role/profile changes made since last login.
+  // Fetch temp users from API or fallback
+  const fetchTempUsers = async () => {
+    try {
+      const data = await apiRequest('/auth/temp-users', 'GET');
+      if (data.success && data.users && data.users.length > 0) {
+        setUsers(data.users);
+        setIsServerMode(true);
+      } else {
+        // Fallback to local storage if API is running but returned empty
+        setIsServerMode(true);
+      }
+    } catch (err) {
+      console.warn('API down, using local simulation mode for temporary onboarding users.');
+      setIsServerMode(false);
+    }
+  };
+
+  // Session check on boot
   useEffect(() => {
+    fetchTempUsers();
+    
     const activeSession = localStorage.getItem('school_auth_session');
     if (activeSession) {
       try {
@@ -154,19 +162,9 @@ export const AuthProvider = ({ children }) => {
           logout();
           setSessionExpiredAlert(true);
         } else {
-          // Look up the current (possibly updated) user profile from state
-          const freshUser = users.find(u => u.id === session.user?.id);
-          if (!freshUser) {
-            logout();
-            return;
-          }
-          setCurrentUser(freshUser);
-          const updatedSession = {
-            ...session,
-            user: freshUser,
-            expiresAt: Date.now() + 2 * 60 * 60 * 1000,
-          };
-          localStorage.setItem('school_auth_session', JSON.stringify(updatedSession));
+          // Look up user from fresh list
+          const freshUser = users.find(u => u.id === session.user?.id || u._id === session.user?.id);
+          setCurrentUser(freshUser || session.user);
         }
       } catch (err) {
         logout();
@@ -175,52 +173,93 @@ export const AuthProvider = ({ children }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 1. SECURE LOGIN ROUTE
-  const login = async (usernameOrId, password) => {
+  // SECURE LOGIN ROUTE
+  const login = async (username, password) => {
     setSessionExpiredAlert(false);
-    const hashed = await hashPassword(password);
-    
-    // Find matching profile
-    const foundUser = users.find(u => {
-      // Case A: Setup not completed, verify temporary ID and raw password
-      if (!u.isSetupCompleted) {
-        return u.tempId === usernameOrId && u.tempPassword === password;
+
+    // Try API Login first
+    try {
+      const data = await apiRequest('/auth/login', 'POST', { username, password });
+      if (data.success) {
+        const session = {
+          user: data.user,
+          token: data.token,
+          loginTime: Date.now(),
+          expiresAt: Date.now() + 2 * 60 * 60 * 1000 // 2 hours
+        };
+        localStorage.setItem('school_auth_session', JSON.stringify(session));
+        setCurrentUser(data.user);
+        setIsServerMode(true);
+        fetchTempUsers();
+        return { success: true, isSetupCompleted: data.user.isSetupCompleted, user: data.user };
       }
-      // Case B: Setup completed, verify permanent username and password hash
-      return u.permanentUsername.toLowerCase() === usernameOrId.toLowerCase() && u.passwordHash === hashed;
+    } catch (err) {
+      console.warn('Backend login query failed, falling back to local simulation engine.', err);
+    }
+
+    // Fallback to Local Simulation Login
+    const hashed = await hashPassword(password);
+    const foundUser = users.find(u => {
+      if (!u.isSetupCompleted) {
+        return u.tempId === username && u.tempPassword === password;
+      }
+      return u.permanentUsername?.toLowerCase() === username.toLowerCase() && u.passwordHash === hashed;
     });
 
     if (foundUser) {
       setCurrentUser(foundUser);
-      // Establish active session (expires in 2 hours)
+      setIsServerMode(false);
       const session = {
         user: foundUser,
         loginTime: Date.now(),
-        expiresAt: Date.now() + 2 * 60 * 60 * 1000 // 2 hours
+        expiresAt: Date.now() + 2 * 60 * 60 * 1000
       };
       localStorage.setItem('school_auth_session', JSON.stringify(session));
       return { success: true, isSetupCompleted: foundUser.isSetupCompleted, user: foundUser };
     }
-    
-    return { success: false, message: 'Invalid ID/Username or Password. Please double check credentials.' };
+
+    return { success: false, message: 'Invalid credentials. If running backend, check if MongoDB is active.' };
   };
 
-  // 2. LOGOUT ROUTE
+  // LOGOUT ROUTE
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('school_auth_session');
   };
 
-  // 3. COMPLETE ACCOUNT ONBOARDING
+  // COMPLETE ACCOUNT ONBOARDING
   const completeOnboarding = async (userId, permanentName, password) => {
-    // A. Check permanent Username uniqueness
+    // Try API Onboarding first
+    if (isServerMode) {
+      try {
+        const data = await apiRequest('/auth/onboarding', 'POST', { 
+          permanentUsername: permanentName, 
+          newPassword: password 
+        });
+        if (data.success) {
+          const session = {
+            user: data.user,
+            token: data.token,
+            loginTime: Date.now(),
+            expiresAt: Date.now() + 2 * 60 * 60 * 1000
+          };
+          localStorage.setItem('school_auth_session', JSON.stringify(session));
+          setCurrentUser(data.user);
+          return { success: true };
+        }
+      } catch (err) {
+        console.warn('API Onboarding failed, using local fallback.');
+      }
+    }
+
+    // Fallback Local Setup
     const usernameTaken = users.some(u => 
-      u.permanentUsername.toLowerCase() === permanentName.toLowerCase() ||
+      u.permanentUsername?.toLowerCase() === permanentName.toLowerCase() ||
       u.tempId?.toLowerCase() === permanentName.toLowerCase()
     );
 
     if (usernameTaken) {
-      return { success: false, message: `Username "${permanentName}" is already taken. Please choose another.` };
+      return { success: false, message: `Username "${permanentName}" is already taken.` };
     }
 
     const hashed = await hashPassword(password);
@@ -228,14 +267,14 @@ export const AuthProvider = ({ children }) => {
 
     setUsers(prev =>
       prev.map(u => {
-        if (u.id === userId) {
+        if (u.id === userId || u._id === userId) {
           updatedProfile = {
             ...u,
             permanentUsername: permanentName,
             passwordHash: hashed,
             isSetupCompleted: true,
-            tempId: '', // nullify temporary ID
-            tempPassword: '' // nullify temporary password
+            tempId: '',
+            tempPassword: ''
           };
           return updatedProfile;
         }
@@ -243,7 +282,6 @@ export const AuthProvider = ({ children }) => {
       })
     );
 
-    // Refresh active session with completed profile
     if (updatedProfile) {
       setCurrentUser(updatedProfile);
       const session = {
@@ -257,18 +295,29 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
-  // 4. FORGOT PASSWORD LOOP (Integrated with virtual webmail)
-  const forgotPassword = (email) => {
+  // FORGOT PASSWORD
+  const forgotPassword = async (email) => {
+    if (isServerMode) {
+      try {
+        const data = await apiRequest('/auth/forgotpassword', 'POST', { email });
+        if (data.success) {
+          return { success: true, message: data.message };
+        }
+      } catch (err) {
+        console.warn('API ForgotPassword failed, using local fallback.');
+      }
+    }
+
+    // Local Fallback
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!user) {
       return { success: false, message: 'Email address not registered in school records.' };
     }
 
-    // Generate simulated recovery token
     const recoveryToken = `rst_tok_${Math.floor(100000 + Math.random() * 900000)}`;
     localStorage.setItem(`recovery_${email}`, recoveryToken);
 
-    // Append reset instruction directly to virtual Gmail logger (school_emails)
+    // Append to local email log
     const rawEmails = localStorage.getItem('school_emails');
     const emailList = rawEmails ? JSON.parse(rawEmails) : [];
     
@@ -276,7 +325,7 @@ export const AuthProvider = ({ children }) => {
       id: `eml-${Math.floor(100000 + Math.random() * 900000)}`,
       to: email,
       subject: '🔒 Security Desk: Password Reset Link',
-      body: `Dear ${user.name},\n\nWe received a request to securely reset the password for your ERP account.\n\nPlease click the link below to overwrite your credentials and create a new secure password:\n\nhttp://localhost:5173/reset-password?token=${recoveryToken}&email=${email}\n\nThis token is valid for 1 hour. If you did not request this, please notify the IT Administration office immediately.\n\nWarm regards,\nIT Security Desk\nHigh School`,
+      body: `Dear ${user.name},\n\nWe received a request to securely reset the password for your ERP account.\n\nPlease click the link below to overwrite your credentials and create a new secure password:\n\nhttp://localhost:5173/reset-password?token=${recoveryToken}&email=${email}\n\nThis token is valid for 1 hour. If you did not request this, please notify the IT Administration office immediately.`,
       sender: 'IT Security Desk <security@highschool.edu>',
       date: new Date().toISOString(),
       isRead: false
@@ -285,14 +334,26 @@ export const AuthProvider = ({ children }) => {
     emailList.unshift(recoveryEmail);
     localStorage.setItem('school_emails', JSON.stringify(emailList));
 
-    return { success: true, message: 'Password recovery instructions have been successfully dispatched to your inbox!' };
+    return { success: true, message: 'Password recovery instructions dispatched to local simulated inbox!' };
   };
 
-  // 5. SECURE RESET PASSWORD OVERWRITE
+  // RESET PASSWORD
   const resetPassword = async (email, token, newPassword) => {
+    if (isServerMode) {
+      try {
+        const data = await apiRequest('/auth/resetpassword', 'POST', { email, token, newPassword });
+        if (data.success) {
+          return { success: true };
+        }
+      } catch (err) {
+        console.warn('API resetPassword failed, using local fallback.');
+      }
+    }
+
+    // Local Fallback
     const savedToken = localStorage.getItem(`recovery_${email}`);
     if (!savedToken || savedToken !== token) {
-      return { success: false, message: 'Invalid or expired password reset authorization token.' };
+      return { success: false, message: 'Invalid or expired password reset token.' };
     }
 
     const hashed = await hashPassword(newPassword);
@@ -304,8 +365,6 @@ export const AuthProvider = ({ children }) => {
             ...u,
             passwordHash: hashed,
             isSetupCompleted: true,
-            // FIX: ensure permanentUsername is set so the user can actually log in.
-            // If they had one already, keep it. If not, derive one from their email prefix.
             permanentUsername: u.permanentUsername || email.split('@')[0],
           };
         }
@@ -317,26 +376,34 @@ export const AuthProvider = ({ children }) => {
     return { success: true };
   };
 
-  // 6. FORCE EXPIRE ACTIVE SESSION FOR TESTING
+  // FORCE EXPIRE ACTIVE SESSION
   const forceSessionExpire = () => {
     const activeSession = localStorage.getItem('school_auth_session');
     if (activeSession) {
       const session = JSON.parse(activeSession);
       const expiredSession = {
         ...session,
-        expiresAt: Date.now() - 1000 // force set to 1 second ago
+        expiresAt: Date.now() - 1000
       };
       localStorage.setItem('school_auth_session', JSON.stringify(expiredSession));
-      // Reload page to trigger active sweep checker
       window.location.reload();
     }
   };
+
+  const quickProfiles = users.map(u => ({
+    id: u.id || u._id,
+    name: u.name,
+    role: u.role,
+    email: u.email
+  }));
 
   return (
     <AuthContext.Provider value={{ 
       currentUser, 
       users,
+      quickProfiles,
       sessionExpiredAlert,
+      isServerMode,
       login, 
       logout, 
       completeOnboarding,

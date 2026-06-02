@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 const Header = ({ toggleSidebar, theme, setTheme }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, isServerMode } = useAuth();
   const { notifications, pushNotification, markAllNotificationsRead } = useDatabase();
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
@@ -49,6 +49,15 @@ const Header = ({ toggleSidebar, theme, setTheme }) => {
       </div>
 
       <div className="header-right">
+        {/* Database Status Indicator */}
+        <div 
+          className={`db-status-badge ${isServerMode ? 'online' : 'offline'}`}
+          title={isServerMode ? "Connected to live MongoDB Database" : "MongoDB Offline: Using Client Simulated Storage"}
+        >
+          <span className="indicator-dot"></span>
+          <span className="indicator-text">{isServerMode ? "Database Online" : "Simulated Offline Mode"}</span>
+        </div>
+
         {/* Dark/Light mode toggler */}
         <button 
           className="theme-toggle-btn" 

@@ -27,6 +27,9 @@
   .login-card {
     grid-template-columns: 1fr;
   }
+  .login-brand-side {
+    display: none;
+  }
 }
 
 .login-brand-side {
@@ -1321,6 +1324,349 @@
   .donut-chart-layout {
     flex-direction: column;
     gap: 12px;
+  }
+}
+
+/* DB Connection Status Badge styling */
+.db-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  transition: var(--transition);
+}
+
+.db-status-badge .indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  display: inline-block;
+}
+
+.db-status-badge.online {
+  color: #10b981;
+  background-color: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.db-status-badge.online .indicator-dot {
+  background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  animation: pulse-online 2s infinite;
+}
+
+.db-status-badge.offline {
+  color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.db-status-badge.offline .indicator-dot {
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  animation: pulse-offline 2s infinite;
+}
+
+@keyframes pulse-online {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes pulse-offline {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+
+@media (max-width: 640px) {
+  .db-status-badge .indicator-text {
+    display: none;
+  }
+  .db-status-badge {
+    padding: 6px;
+  }
+}
+
+/* --- Redesigned Premium SaaS Landing Page Styles --- */
+.saas-landing-container {
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #64748b;
+  background-color: #0b1220;
+  color: #f8fafc;
+  font-family: var(--font-body);
+}
+
+/* Scroll reveal triggers */
+.reveal-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-up.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hero Section */
+.hero-headline {
+  font-family: var(--font-title);
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  background: linear-gradient(135deg, #ffffff 40%, #94a3b8 70%, #60a5fa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-glow-blob {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, rgba(99, 102, 241, 0.03) 50%, transparent 100%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Premium Glassmorphism Navbar */
+.saas-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(11, 18, 32, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: var(--transition);
+}
+
+.saas-nav-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: var(--transition);
+  position: relative;
+  padding: 8px 0;
+}
+
+.saas-nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #3b82f6;
+  transition: var(--transition);
+}
+
+.saas-nav-link:hover {
+  color: #ffffff;
+}
+
+.saas-nav-link:hover::after {
+  width: 100%;
+}
+
+/* Redesigned Premium Buttons */
+.saas-btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.25);
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.saas-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(59, 130, 246, 0.35);
+  background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+}
+
+.saas-btn-secondary {
+  background: rgba(255, 255, 255, 0.03);
+  color: #cbd5e1;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.saas-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Mock Browser Window Styling */
+.browser-frame {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(17, 24, 39, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.browser-header {
+  height: 48px;
+  background: rgba(11, 18, 32, 0.5);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.browser-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.browser-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+}
+
+.browser-dot.red { background-color: #ef4444; }
+.browser-dot.yellow { background-color: #f59e0b; }
+.browser-dot.green { background-color: #10b981; }
+
+.browser-address {
+  width: 320px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 550;
+}
+
+/* Float Animations for Mockups */
+.float-element-1 {
+  animation: float1 6s ease-in-out infinite;
+}
+
+.float-element-2 {
+  animation: float2 7s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(8px) rotate(-1deg); }
+}
+
+/* Premium Grid of Feature Cards */
+.saas-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.saas-feature-card {
+  padding: 32px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.saas-feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(96, 165, 250, 0.25);
+  box-shadow: 0 16px 40px rgba(59, 130, 246, 0.05);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+}
+
+.saas-card-glow {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+  top: -30px;
+  right: -30px;
+  pointer-events: none;
+  border-radius: var(--radius-full);
+}
+
+/* Modern Role tabs switcher styling */
+.saas-role-tab-btn {
+  padding: 12px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  color: #64748b;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.saas-role-tab-btn:hover {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.saas-role-tab-btn.active {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.15);
+}
+
+.role-preview-card {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(17, 24, 39, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 40px;
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 640px) {
+  .role-preview-card {
+    padding: 24px 16px;
   }
 }
 

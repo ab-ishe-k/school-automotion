@@ -14,7 +14,7 @@ import {
   ClipboardCopy
 } from 'lucide-react';
 
-const Login = () => {
+const Login = ({ onBackToLanding }) => {
   const { 
     login, 
     users, 
@@ -82,14 +82,14 @@ const Login = () => {
     }
   };
 
-  const handleForgotSubmit = (e) => {
+  const handleForgotSubmit = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return;
 
     setForgotError('');
     setForgotSuccess('');
 
-    const result = forgotPassword(forgotEmail);
+    const result = await forgotPassword(forgotEmail);
     if (result.success) {
       setForgotSuccess(result.message);
       setForgotEmail('');
@@ -404,6 +404,40 @@ const Login = () => {
               >
                 {submitting ? 'Authenticating Gateway...' : 'Secure Login'}
               </button>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ width: '100%', height: '40px', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '12px', border: '1px solid var(--border-color)' }}
+                onClick={onBackToLanding}
+              >
+                Back to Website
+              </button>
+
+              <div style={{ marginTop: '24px', borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '805', color: 'var(--text-secondary)', display: 'block', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  ⚡ Quick Demo Login (Click to Autofill)
+                </span>
+                <div className="quick-profiles-grid">
+                  {users.slice(0, 6).map(u => (
+                    <button
+                      key={u.id || u._id}
+                      type="button"
+                      className="quick-profile-card"
+                      onClick={() => {
+                        setUsername(u.isSetupCompleted ? u.permanentUsername : u.tempId);
+                        setPassword(u.isSetupCompleted ? 'Demo-Password' : u.tempPassword);
+                      }}
+                      style={{ padding: '8px', gap: '8px' }}
+                    >
+                      <img src={u.avatar} className="quick-profile-avatar" style={{ width: '28px', height: '28px' }} alt="" />
+                      <div className="quick-profile-info">
+                        <span className="quick-profile-name" style={{ fontSize: '11px', lineHeight: '1.2' }}>{u.name.split(' ')[0]}</span>
+                        <span className="quick-profile-role" style={{ fontSize: '8px', lineHeight: '1.2' }}>{u.role}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </form>
           )}
 

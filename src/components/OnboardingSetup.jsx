@@ -43,7 +43,7 @@ const OnboardingSetup = () => {
     }
 
     const taken = users.some(u => 
-      u.permanentUsername.toLowerCase() === username.toLowerCase() ||
+      u.permanentUsername?.toLowerCase() === username.toLowerCase() ||
       u.tempId?.toLowerCase() === username.toLowerCase()
     );
 

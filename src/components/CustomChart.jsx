@@ -214,8 +214,7 @@ export const DonutChart = ({ data = [], title = 'Category Weight' }) => {
                   strokeLinecap="round"
                   style={{ 
                     cursor: 'pointer', 
-                    transition: 'stroke-width 0.2s, transform 0.2s',
-                    transformOrigin: 'center'
+                    transition: 'stroke-width 0.2s'
                   }}
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}

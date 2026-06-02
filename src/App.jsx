@@ -15,6 +15,7 @@ import IntegrationTab from './components/IntegrationTab';
 import IDGenerator from './components/IDGenerator';
 import OnboardingSetup from './components/OnboardingSetup';
 import ErrorBoundary from './components/ErrorBoundary';
+import LandingPage from './components/LandingPage';
 
 // Role Dashboards
 import PrincipalDashboard from './dashboards/PrincipalDashboard';
@@ -32,6 +33,7 @@ const MainAppLayout = () => {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('school_theme') || 'light';
   });
+  const [showPortal, setShowPortal] = useState(false);
 
   // Apply dark/light theme to document element
   useEffect(() => {
@@ -43,11 +45,15 @@ const MainAppLayout = () => {
   useEffect(() => {
     if (!currentUser) {
       setActiveSection('dashboard');
+      setShowPortal(false);
     }
   }, [currentUser]);
 
   if (!currentUser) {
-    return <Login />;
+    if (!showPortal) {
+      return <LandingPage onEnterPortal={() => setShowPortal(true)} />;
+    }
+    return <Login onBackToLanding={() => setShowPortal(false)} />;
   }
 
   // Force onboarding setup if it's the user's first login

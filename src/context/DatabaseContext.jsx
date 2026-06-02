@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiRequest } from '../utils/api';
+import { useAuth } from './AuthContext';
 import { sanitize, nameToEmail, genId } from '../utils/helpers';
 
 const DatabaseContext = createContext();
 
-// Mock Initial Data if localStorage is empty
+// Mock Initial Data if localStorage is empty (Local Fallbacks)
 const INITIAL_APPOINTMENTS = [
   {
     id: 'APT-98271',
@@ -46,20 +48,6 @@ const INITIAL_APPOINTMENTS = [
     calendarEventId: '',
     resolutionNotes: '',
     createdAt: '2026-05-30T16:45:00Z'
-  },
-  {
-    id: 'APT-77291',
-    userName: 'Rajesh Kumar',
-    userRole: 'Parent',
-    appointmentWith: 'Mrs. Janet Finch (Accounts Manager)',
-    department: 'Accounts department',
-    date: '2026-06-02',
-    time: '01:00 PM',
-    purpose: 'Inquiry regarding quarterly fee installment options.',
-    status: 'APPROVED',
-    calendarEventId: 'gcal_evt_77291c',
-    resolutionNotes: '',
-    createdAt: '2026-05-30T09:00:00Z'
   }
 ];
 
@@ -89,19 +77,6 @@ const INITIAL_QUERIES = [
     status: 'Pending',
     resolution: '',
     closedDate: ''
-  },
-  {
-    id: 'QRY-10822',
-    raisedBy: 'Emily Davis',
-    role: 'Student',
-    category: 'Timetable',
-    subject: 'Elective course overlap',
-    description: 'Psychology elective and Advanced Physics overlap on Thursday 4th period.',
-    assignedTo: 'Admin Staff',
-    date: '2026-05-27T08:15:00Z',
-    status: 'Resolved',
-    resolution: 'Advanced Physics cohort B shifted to Wednesday 3rd period. Timetables updated.',
-    closedDate: '2026-05-28T16:00:00Z'
   }
 ];
 
@@ -133,20 +108,6 @@ const INITIAL_COMPLAINTS = [
     resolvedDate: '',
     isEscalated: false,
     internalNotes: ''
-  },
-  {
-    id: 'CMP-00192',
-    submittedBy: 'Emily Davis',
-    role: 'Student',
-    complaintType: 'Student behavior',
-    description: 'Persistent loud shouting and pushing in the library corridor during study hall hours by seniors.',
-    assignedOfficer: 'Vice Principal (Ms. Clara Vance)',
-    date: '2026-05-26T11:00:00Z',
-    status: 'Resolved',
-    actionTaken: 'Stationed hall monitor near the library. Seniors warned about disciplinary consequences.',
-    resolvedDate: '2026-05-28T14:00:00Z',
-    isEscalated: false,
-    internalNotes: 'Monitor reports hallway is quiet now.'
   }
 ];
 
@@ -179,18 +140,9 @@ const INITIAL_AUDIT_LOGS = [
     role: 'Student',
     action: 'Logged in to Student Dashboard',
     details: 'Browser: Chrome, OS: Windows, IP: 192.168.1.45'
-  },
-  {
-    id: 'LOG-002',
-    timestamp: '2026-05-30T11:20:00Z',
-    user: 'Sarah Smith',
-    role: 'Parent',
-    action: 'Booked Appointment with Math Teacher (APT-10823)',
-    details: 'Added rows to Appointments Google Sheet, queued confirmation email.'
   }
 ];
 
-// Accounting, Recruits and enrollment sheets
 const INITIAL_PAYMENTS = [
   {
     id: 'PAY-10029',
@@ -234,7 +186,7 @@ const INITIAL_STUDENTS = [
     pendingMonths: 1,
     paymentDate: '',
     paymentStatus: 'Pending',
-    feeStatus: 'Outstanding', // backward compatibility
+    feeStatus: 'Outstanding',
     remindersActive: true
   },
   {
@@ -258,72 +210,6 @@ const INITIAL_STUDENTS = [
     paymentStatus: 'Paid',
     feeStatus: 'Paid',
     remindersActive: false
-  },
-  {
-    id: 'STD-10101',
-    name: 'Baby Aarav',
-    email: 'aarav.nry@school.edu',
-    class: 'Nursery',
-    rollNumber: '01',
-    parentName: 'Mrs. Priya Sharma',
-    parentEmail: 'priya.sharma@gmail.com',
-    parentContact: '555-010-3344',
-    admissionDate: '2026-06-01',
-    monthlyTuitionFee: 1200,
-    busFee: 300,
-    monthlyExtraCurricularFee: 100,
-    totalMonthlyFee: 1600,
-    paidAmount: 1600,
-    pendingAmount: 0,
-    pendingMonths: 0,
-    paymentDate: '2026-06-01',
-    paymentStatus: 'Paid',
-    feeStatus: 'Paid',
-    remindersActive: false
-  },
-  {
-    id: 'STD-20202',
-    name: 'Diya Sharma',
-    email: 'diya.grade5@school.edu',
-    class: 'Grade 5',
-    rollNumber: '08',
-    parentName: 'Mrs. Priya Sharma',
-    parentEmail: 'priya.sharma@gmail.com',
-    parentContact: '555-010-3344',
-    admissionDate: '2026-06-01',
-    monthlyTuitionFee: 1500,
-    busFee: 400,
-    monthlyExtraCurricularFee: 120,
-    totalMonthlyFee: 2020,
-    paidAmount: 0,
-    pendingAmount: 2020,
-    pendingMonths: 1,
-    paymentDate: '',
-    paymentStatus: 'Pending',
-    feeStatus: 'Outstanding',
-    remindersActive: true
-  },
-  {
-    id: 'STD-30303',
-    name: 'John Doe',
-    email: 'john.doe@school.edu',
-    class: 'Grade 12-A',
-    rollNumber: '15',
-    parentName: 'Mr. Richard Doe',
-    parentEmail: 'richard.doe@gmail.com',
-    parentContact: '555-019-8877',
-    admissionDate: '2026-06-01',
-    monthlyTuitionFee: 2500,
-    busFee: 500,
-    monthlyExtraCurricularFee: 200,
-    totalMonthlyFee: 3200,
-    paidAmount: 3200,
-    pendingAmount: 0,
-    pendingMonths: 0,
-    paymentDate: '2026-06-01',
-    paymentStatus: 'Paid',
-    feeStatus: 'Paid',
-    remindersActive: false
   }
 ];
 
@@ -339,126 +225,8 @@ const INITIAL_STAFF = [
     classTeacherOf: 'Grade 11-A',
     joiningDate: '2021-08-15',
     monthlySalary: 4500,
-    salary: '4500', // backward compatibility
     paidSalary: 0,
     remainingSalary: 4500,
-    paymentDate: '',
-    paymentStatus: 'Pending'
-  },
-  {
-    id: 'STF-30301',
-    name: 'Dr. Sarah Jenkins',
-    role: 'Teacher',
-    email: 'jenkins.physics@school.edu',
-    phone: '555-018-7788',
-    designation: 'Physics Instructor',
-    department: 'Physics Dept',
-    classTeacherOf: 'Grade 12-A',
-    joiningDate: '2022-09-01',
-    monthlySalary: 4800,
-    salary: '4800',
-    paidSalary: 0,
-    remainingSalary: 4800,
-    paymentDate: '',
-    paymentStatus: 'Pending'
-  },
-  {
-    id: 'STF-30302',
-    name: 'Dr. Robert Boyle',
-    role: 'Teacher',
-    email: 'boyle.chem@school.edu',
-    phone: '555-018-9922',
-    designation: 'Chemistry Instructor',
-    department: 'Chemistry Dept',
-    joiningDate: '2023-01-10',
-    monthlySalary: 4700,
-    salary: '4700',
-    paidSalary: 0,
-    remainingSalary: 4700,
-    paymentDate: '',
-    paymentStatus: 'Pending'
-  },
-  {
-    id: 'STF-30303',
-    name: 'Mrs. Rosalind Franklin',
-    role: 'Teacher',
-    email: 'franklin.bio@school.edu',
-    phone: '555-018-8833',
-    designation: 'Biology Instructor',
-    department: 'Biology Dept',
-    joiningDate: '2020-06-15',
-    monthlySalary: 4900,
-    salary: '4900',
-    paidSalary: 0,
-    remainingSalary: 4900,
-    paymentDate: '',
-    paymentStatus: 'Pending'
-  },
-  {
-    id: 'STF-30304',
-    name: 'Ms. Emily Dickinson',
-    role: 'Teacher',
-    email: 'dickinson.english@school.edu',
-    phone: '555-018-1144',
-    designation: 'English Literature Instructor',
-    department: 'English Dept',
-    classTeacherOf: 'Grade 10-B',
-    joiningDate: '2021-11-20',
-    monthlySalary: 4400,
-    salary: '4400',
-    paidSalary: 0,
-    remainingSalary: 4400,
-    paymentDate: '',
-    paymentStatus: 'Pending'
-  },
-  {
-    id: 'STF-30305',
-    name: 'Mr. Alan Turing',
-    role: 'Teacher',
-    email: 'turing.cs@school.edu',
-    phone: '555-018-2255',
-    designation: 'Computer Science Instructor',
-    department: 'Computer Science Dept',
-    joiningDate: '2019-08-01',
-    monthlySalary: 5200,
-    salary: '5200',
-    paidSalary: 0,
-    remainingSalary: 5200,
-    paymentDate: '',
-    paymentStatus: 'Pending'
-  },
-  {
-    id: 'STF-30306',
-    name: 'Mr. Vincent van Gogh',
-    role: 'Teacher',
-    email: 'gogh.art@school.edu',
-    phone: '555-018-3366',
-    designation: 'Fine Arts Instructor',
-    department: 'Art Dept',
-    classTeacherOf: 'Nursery',
-    joiningDate: '2023-08-15',
-    monthlySalary: 4200,
-    salary: '4200',
-    paidSalary: 0,
-    remainingSalary: 4200,
-    paymentDate: '',
-    paymentStatus: 'Pending'
-  },
-  {
-    id: 'STF-30307',
-    name: 'Mrs. Eleanor Roosevelt',
-    role: 'Teacher',
-    email: 'roosevelt.hist@school.edu',
-    phone: '555-018-4477',
-    designation: 'Social Sciences Advisor',
-    department: 'History Dept',
-    classTeacherOf: 'Grade 5',
-    joiningDate: '2020-01-15',
-    monthlySalary: 4600,
-    salary: '4600',
-    paidSalary: 0,
-    remainingSalary: 4600,
-    paymentDate: '',
     paymentStatus: 'Pending'
   },
   {
@@ -471,10 +239,8 @@ const INITIAL_STAFF = [
     department: 'Principal Office',
     joiningDate: '2018-05-10',
     monthlySalary: 7500,
-    salary: '7500',
     paidSalary: 0,
     remainingSalary: 7500,
-    paymentDate: '',
     paymentStatus: 'Pending'
   },
   {
@@ -487,10 +253,8 @@ const INITIAL_STAFF = [
     department: 'VP Office',
     joiningDate: '2019-10-01',
     monthlySalary: 6000,
-    salary: '6000',
     paidSalary: 0,
     remainingSalary: 6000,
-    paymentDate: '',
     paymentStatus: 'Pending'
   }
 ];
@@ -509,122 +273,96 @@ const INITIAL_LEAVES = [
     status: 'Approved',
     remarks: 'Get well soon, Liam. Stay hydrated.',
     createdAt: '2026-06-01T10:00:00Z'
-  },
-  {
-    id: 'LV-90281',
-    applicantName: 'Mr. Marcus Davis',
-    applicantRole: 'Teacher',
-    applicantClass: 'Math Dept',
-    startDate: '2026-06-10',
-    endDate: '2026-06-12',
-    leaveType: 'Casual Leave',
-    reason: 'Attending regional mathematics education summit.',
-    assignedTo: 'Ms. Clara Vance',
-    status: 'Pending',
-    remarks: '',
-    createdAt: '2026-06-01T11:00:00Z'
   }
 ];
 
+const getLocalStorageItem = (key, fallback) => {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : fallback;
+  } catch (e) {
+    console.warn(`Error parsing localStorage key "${key}", falling back to initial data:`, e);
+    return fallback;
+  }
+};
+
 export const DatabaseProvider = ({ children }) => {
-  const [appointments, setAppointments] = useState(() => {
-    const data = localStorage.getItem('school_appointments');
-    return data ? JSON.parse(data) : INITIAL_APPOINTMENTS;
-  });
+  const { currentUser, isServerMode } = useAuth();
 
-  const [queries, setQueries] = useState(() => {
-    const data = localStorage.getItem('school_queries');
-    return data ? JSON.parse(data) : INITIAL_QUERIES;
-  });
-
-  const [complaints, setComplaints] = useState(() => {
-    const data = localStorage.getItem('school_complaints');
-    return data ? JSON.parse(data) : INITIAL_COMPLAINTS;
-  });
-
-  const [virtualEmails, setVirtualEmails] = useState(() => {
-    const data = localStorage.getItem('school_emails');
-    return data ? JSON.parse(data) : INITIAL_EMAILS;
-  });
-
-  const [auditLogs, setAuditLogs] = useState(() => {
-    const data = localStorage.getItem('school_audit_logs');
-    return data ? JSON.parse(data) : INITIAL_AUDIT_LOGS;
-  });
-
-  // Expanded tables
-  const [payments, setPayments] = useState(() => {
-    const data = localStorage.getItem('school_payments');
-    return data ? JSON.parse(data) : INITIAL_PAYMENTS;
-  });
-
-  const [students, setStudents] = useState(() => {
-    const data = localStorage.getItem('school_students');
-    return data ? JSON.parse(data) : INITIAL_STUDENTS;
-  });
-
-  const [staff, setStaff] = useState(() => {
-    const data = localStorage.getItem('school_staff');
-    return data ? JSON.parse(data) : INITIAL_STAFF;
-  });
-
-  const [leaves, setLeaves] = useState(() => {
-    const data = localStorage.getItem('school_leaves');
-    return data ? JSON.parse(data) : INITIAL_LEAVES;
-  });
-
+  // Local state initialized with fallback data safely
+  const [appointments, setAppointments] = useState(() => getLocalStorageItem('school_appointments', INITIAL_APPOINTMENTS));
+  const [queries, setQueries] = useState(() => getLocalStorageItem('school_queries', INITIAL_QUERIES));
+  const [complaints, setComplaints] = useState(() => getLocalStorageItem('school_complaints', INITIAL_COMPLAINTS));
+  const [virtualEmails, setVirtualEmails] = useState(() => getLocalStorageItem('school_emails', INITIAL_EMAILS));
+  const [auditLogs, setAuditLogs] = useState(() => getLocalStorageItem('school_audit_logs', INITIAL_AUDIT_LOGS));
+  const [payments, setPayments] = useState(() => getLocalStorageItem('school_payments', INITIAL_PAYMENTS));
+  const [students, setStudents] = useState(() => getLocalStorageItem('school_students', INITIAL_STUDENTS));
+  const [staff, setStaff] = useState(() => getLocalStorageItem('school_staff', INITIAL_STAFF));
+  const [leaves, setLeaves] = useState(() => getLocalStorageItem('school_leaves', INITIAL_LEAVES));
+  const [notifications, setNotifications] = useState([]);
   const [googleSheetsUrl, setGoogleSheetsUrl] = useState(() => {
     return localStorage.getItem('school_google_sheets_url') || '';
   });
-
   const [apiLogs, setApiLogs] = useState([]);
 
-  // Sync googleSheetsUrl to localStorage
-  useEffect(() => {
-    localStorage.setItem('school_google_sheets_url', googleSheetsUrl);
-  }, [googleSheetsUrl]);
-
-  const [notifications, setNotifications] = useState([]);
-
-  // Sync to localStorage
+  // Local state persistence
   useEffect(() => {
     localStorage.setItem('school_appointments', JSON.stringify(appointments));
   }, [appointments]);
-
   useEffect(() => {
     localStorage.setItem('school_queries', JSON.stringify(queries));
   }, [queries]);
-
   useEffect(() => {
     localStorage.setItem('school_complaints', JSON.stringify(complaints));
   }, [complaints]);
-
   useEffect(() => {
     localStorage.setItem('school_emails', JSON.stringify(virtualEmails));
   }, [virtualEmails]);
-
   useEffect(() => {
     localStorage.setItem('school_audit_logs', JSON.stringify(auditLogs));
   }, [auditLogs]);
-
   useEffect(() => {
     localStorage.setItem('school_payments', JSON.stringify(payments));
   }, [payments]);
-
   useEffect(() => {
     localStorage.setItem('school_students', JSON.stringify(students));
   }, [students]);
-
   useEffect(() => {
     localStorage.setItem('school_staff', JSON.stringify(staff));
   }, [staff]);
-
   useEffect(() => {
     localStorage.setItem('school_leaves', JSON.stringify(leaves));
   }, [leaves]);
 
-  // Log action helper
-  const addAuditLog = (user, role, action, details = '') => {
+  // Load all records when user logs in (If Server mode is active)
+  const loadAllData = async () => {
+    if (!currentUser || !isServerMode) return;
+    try {
+      const res = await apiRequest('/dashboard/bundle', 'GET');
+      if (res.success) {
+        setAppointments(res.data.appointments || []);
+        setQueries(res.data.queries || []);
+        setComplaints(res.data.complaints || []);
+        setVirtualEmails(res.data.virtualEmails || []);
+        setAuditLogs(res.data.auditLogs || []);
+        setPayments(res.data.payments || []);
+        setStudents(res.data.students || []);
+        setStaff(res.data.staff || []);
+        setLeaves(res.data.leaves || []);
+        setNotifications(res.data.notifications || []);
+      }
+    } catch (err) {
+      console.warn('Failed to load database bundle from backend, staying in local storage simulation mode.', err);
+    }
+  };
+
+  useEffect(() => {
+    loadAllData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser, isServerMode]);
+
+  // General helpers
+  const addAuditLogLocal = (user, role, action, details = '') => {
     const newLog = {
       id: `LOG-${Math.floor(100000 + Math.random() * 900000)}`,
       timestamp: new Date().toISOString(),
@@ -636,13 +374,7 @@ export const DatabaseProvider = ({ children }) => {
     setAuditLogs(prev => [newLog, ...prev]);
   };
 
-  // Mark all notifications as read (FIX: was mutating state directly in Header)
-  const markAllNotificationsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
-
-  // Push notification helper
-  const pushNotification = (message, type = 'info') => {
+  const pushNotificationLocal = (message, type = 'info') => {
     const newNotif = {
       id: `notif-${Date.now()}-${Math.random()}`,
       message,
@@ -653,8 +385,7 @@ export const DatabaseProvider = ({ children }) => {
     setNotifications(prev => [newNotif, ...prev]);
   };
 
-  // Simulated Email Dispatcher
-  const sendEmail = (to, subject, body, sender = 'School Automation <no-reply@school.edu>') => {
+  const sendEmailLocal = (to, subject, body, sender = 'School Automation <no-reply@school.edu>') => {
     const newEmail = {
       id: `eml-${Math.floor(100000 + Math.random() * 900000)}`,
       to,
@@ -667,7 +398,6 @@ export const DatabaseProvider = ({ children }) => {
     setVirtualEmails(prev => [newEmail, ...prev]);
   };
 
-  // Helper mapping department categories to responsible staff
   const getAssignedOfficer = (category, type) => {
     if (type === 'query') {
       switch (category) {
@@ -694,12 +424,18 @@ export const DatabaseProvider = ({ children }) => {
     }
   };
 
-  // 1. APPOINTMENT ACTIONS
-  const bookAppointment = (booking, currentUser) => {
-    const bookingId = genId('APT');
-    const emailTo = nameToEmail(currentUser.name);
-    const isPrincipal = booking.department === 'Principal';
+  // 1. APPOINTMENTS
+  const bookAppointment = async (booking) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest('/dashboard/appointment', 'POST', booking);
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
 
+    // Local Logic
+    const bookingId = genId('APT');
+    const isPrincipal = booking.department === 'Principal';
     const newBooking = {
       id: bookingId,
       userName: currentUser.name,
@@ -716,146 +452,49 @@ export const DatabaseProvider = ({ children }) => {
     };
 
     setAppointments(prev => [newBooking, ...prev]);
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Booked Appointment with ${booking.appointmentWith} (${bookingId})`,
-      `Logged row in Appointments Sheet. Status: ${newBooking.status}.`
-    );
-
-    sendEmail(
-      emailTo,
-      `Appointment Booked - ${newBooking.status} - ID: ${bookingId}`,
-      `Hi ${currentUser.name},\n\nYour appointment with ${booking.appointmentWith} has been logged in the system.\n\nBooking ID: ${bookingId}\nDate: ${booking.date}\nTime: ${booking.time}\nPurpose: ${booking.purpose}\n\nStatus: ${newBooking.status}.\n${
-        isPrincipal 
-          ? 'Since this is with the Principal, it is currently PENDING approval. You will receive an update shortly.' 
-          : `This has been AUTO-APPROVED. Google Calendar Event ID: ${newBooking.calendarEventId} has been added.`
-      }`
-    );
-
-    pushNotification(`New appointment booking logged: ${bookingId}`, 'success');
+    addAuditLogLocal(currentUser.name, currentUser.role, `Booked Appointment with ${booking.appointmentWith} (${bookingId})`);
+    sendEmailLocal(currentUser.email, `Appointment Booked - ${newBooking.status} - ID: ${bookingId}`, `Your appointment with ${booking.appointmentWith} is logged.`);
+    pushNotificationLocal(`New appointment booking logged: ${bookingId}`, 'success');
   };
 
-  const approveAppointment = (id, resolutionNotes, approverUser) => {
+  const approveAppointment = async (id, resolutionNotes) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/appointment/${id}`, 'PATCH', { action: 'approve', resolutionNotes });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
+
+    // Local Logic
     const calendarEvtId = `gcal_evt_${Math.floor(100000 + Math.random() * 900000)}`;
     let clientName = '';
-    let clientRole = '';
     let appointmentWith = '';
 
     setAppointments(prev =>
       prev.map(apt => {
         if (apt.id === id) {
           clientName = apt.userName;
-          clientRole = apt.userRole;
           appointmentWith = apt.appointmentWith;
-          return {
-            ...apt,
-            status: 'APPROVED',
-            calendarEventId: calendarEvtId,
-            resolutionNotes: resolutionNotes || apt.resolutionNotes
-          };
+          return { ...apt, status: 'APPROVED', calendarEventId: calendarEvtId, resolutionNotes: resolutionNotes || apt.resolutionNotes };
         }
         return apt;
       })
     );
 
-    addAuditLog(
-      approverUser.name,
-      approverUser.role,
-      `Approved Appointment ${id}`,
-      `Set status to APPROVED in Google Sheets. Created Google Calendar Event: ${calendarEvtId}`
-    );
-
-    const clientEmail = nameToEmail(clientName);
-    sendEmail(
-      clientEmail,
-      `Appointment APPROVED & Calendar Event Added - ID: ${id}`,
-      `Hi ${clientName},\n\nYour appointment with ${appointmentWith} has been APPROVED.\n\nBooking ID: ${id}\nGoogle Calendar Event ID: ${calendarEvtId}\n\nNotes from Approver:\n${resolutionNotes || 'No notes provided.'}\n\nSee you then!`
-    );
-
-    pushNotification(`Appointment ${id} has been approved.`, 'info');
+    addAuditLogLocal(currentUser.name, currentUser.role, `Approved Appointment ${id}`);
+    sendEmailLocal(nameToEmail(clientName), `Appointment APPROVED & Calendar Event Added - ID: ${id}`, `Approved consultation with ${appointmentWith}.`);
+    pushNotificationLocal(`Appointment ${id} approved.`, 'info');
   };
 
-  const rejectAppointment = (id, remarks, approverUser) => {
-    let clientName = '';
-    let clientRole = '';
-    let appointmentWith = '';
+  const rejectAppointment = async (id, remarks) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/appointment/${id}`, 'PATCH', { action: 'reject', resolutionNotes: remarks });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
 
-    setAppointments(prev =>
-      prev.map(apt => {
-        if (apt.id === id) {
-          clientName = apt.userName;
-          clientRole = apt.userRole;
-          appointmentWith = apt.appointmentWith;
-          return {
-            ...apt,
-            status: 'REJECTED',
-            resolutionNotes: remarks || 'Rejected by authority'
-          };
-        }
-        return apt;
-      })
-    );
-
-    addAuditLog(
-      approverUser.name,
-      approverUser.role,
-      `Rejected Appointment ${id}`,
-      `Set status to REJECTED in Google Sheets. Reason: ${remarks}`
-    );
-
-    const clientEmail = nameToEmail(clientName);
-    sendEmail(
-      clientEmail,
-      `Appointment REJECTED - ID: ${id}`,
-      `Hi ${clientName},\n\nWe regret to inform you that your appointment request with ${appointmentWith} has been REJECTED.\n\nBooking ID: ${id}\nReason for Rejection:\n${remarks || 'No reason provided by the administrator.'}\n\nPlease reschedule using a different slot.`
-    );
-
-    pushNotification(`Appointment ${id} was rejected.`, 'warning');
-  };
-
-  const rescheduleAppointment = (id, newDate, newTime, currentUser) => {
-    let clientName = '';
-    let appointmentWith = '';
-    const calendarEvtId = `gcal_evt_${Math.floor(100000 + Math.random() * 900000)}`;
-
-    setAppointments(prev =>
-      prev.map(apt => {
-        if (apt.id === id) {
-          clientName = apt.userName;
-          appointmentWith = apt.appointmentWith;
-          return {
-            ...apt,
-            date: newDate,
-            time: newTime,
-            status: 'APPROVED',
-            calendarEventId: calendarEvtId,
-            resolutionNotes: `Rescheduled by ${currentUser.name} on ${new Date().toLocaleDateString()}`
-          };
-        }
-        return apt;
-      })
-    );
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Rescheduled Appointment ${id}`,
-      `Updated Date to ${newDate} and Time to ${newTime} in Appointments Sheet.`
-    );
-
-    const clientEmail = nameToEmail(clientName);
-    sendEmail(
-      clientEmail,
-      `Appointment RESCHEDULED - ID: ${id}`,
-      `Hi ${clientName},\n\nYour appointment with ${appointmentWith} has been rescheduled successfully.\n\nBooking ID: ${id}\nNew Date: ${newDate}\nNew Time: ${newTime}\nNew Google Calendar Event ID: ${calendarEvtId}\n\nYour Google Calendar has been updated accordingly.`
-    );
-
-    pushNotification(`Appointment ${id} has been rescheduled to ${newDate} at ${newTime}.`, 'info');
-  };
-
-  const cancelAppointment = (id, currentUser) => {
+    // Local Logic
     let clientName = '';
     let appointmentWith = '';
 
@@ -864,39 +503,71 @@ export const DatabaseProvider = ({ children }) => {
         if (apt.id === id) {
           clientName = apt.userName;
           appointmentWith = apt.appointmentWith;
-          return {
-            ...apt,
-            status: 'CANCELLED',
-            calendarEventId: ''
-          };
+          return { ...apt, status: 'REJECTED', resolutionNotes: remarks || 'Rejected by authority' };
         }
         return apt;
       })
     );
 
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Cancelled Appointment ${id}`,
-      `Set status to CANCELLED in Google Sheets. Removed calendar event.`
-    );
-
-    const clientEmail = nameToEmail(clientName);
-    sendEmail(
-      clientEmail,
-      `Appointment CANCELLED - ID: ${id}`,
-      `Hi ${clientName},\n\nYour appointment with ${appointmentWith} has been CANCELLED.\n\nBooking ID: ${id}\nThe Google Calendar event has been deleted. If you need to meet, please log in and book a fresh appointment.`
-    );
-
-    pushNotification(`Appointment ${id} has been cancelled.`, 'warning');
+    addAuditLogLocal(currentUser.name, currentUser.role, `Rejected Appointment ${id}`);
+    sendEmailLocal(nameToEmail(clientName), `Appointment REJECTED - ID: ${id}`, `Your appointment with ${appointmentWith} was rejected.`);
+    pushNotificationLocal(`Appointment ${id} rejected.`, 'info');
   };
 
-  // 2. QUERY ACTIONS
-  const raiseQuery = (query, currentUser) => {
+  const rescheduleAppointment = async (id, newDate, newTime) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/appointment/${id}`, 'PATCH', { action: 'reschedule', newDate, newTime });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
+
+    // Local Logic
+    setAppointments(prev =>
+      prev.map(apt => {
+        if (apt.id === id) {
+          return { ...apt, date: newDate, time: newTime, status: 'PENDING', calendarEventId: '' };
+        }
+        return apt;
+      })
+    );
+    addAuditLogLocal(currentUser.name, currentUser.role, `Rescheduled Appointment ${id}`);
+    pushNotificationLocal(`Rescheduled Appointment ${id}`, 'info');
+  };
+
+  const cancelAppointment = async (id) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/appointment/${id}`, 'PATCH', { action: 'cancel' });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
+
+    // Local Logic
+    setAppointments(prev =>
+      prev.map(apt => {
+        if (apt.id === id) {
+          return { ...apt, status: 'REJECTED', resolutionNotes: 'Cancelled by applicant' };
+        }
+        return apt;
+      })
+    );
+    addAuditLogLocal(currentUser.name, currentUser.role, `Cancelled Appointment ${id}`);
+    pushNotificationLocal(`Cancelled Appointment ${id}`, 'info');
+  };
+
+  // 2. QUERIES
+  const raiseQuery = async (query) => {
+    const assignedTo = getAssignedOfficer(query.category, 'query');
+    if (isServerMode) {
+      try {
+        const res = await apiRequest('/dashboard/query', 'POST', { ...query, assignedTo });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
+
+    // Local Logic
     const queryId = genId('QRY');
-    const assigned = getAssignedOfficer(query.category, 'query');
-    const userEmail = nameToEmail(currentUser.name);
-
     const newQuery = {
       id: queryId,
       raisedBy: currentUser.name,
@@ -904,7 +575,7 @@ export const DatabaseProvider = ({ children }) => {
       category: query.category,
       subject: sanitize(query.subject),
       description: sanitize(query.description),
-      assignedTo: assigned,
+      assignedTo,
       date: new Date().toISOString(),
       status: 'Pending',
       resolution: '',
@@ -912,79 +583,55 @@ export const DatabaseProvider = ({ children }) => {
     };
 
     setQueries(prev => [newQuery, ...prev]);
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Raised Query: ${queryId}`,
-      `Logged row in Queries Sheet. Auto-assigned to: ${assigned}`
-    );
-
-    sendEmail(
-      userEmail,
-      `Query Received & Ticket Generated - ID: ${queryId}`,
-      `Dear ${currentUser.name},\n\nWe have received your query regarding "${query.category}".\n\nTicket ID: ${queryId}\nSubject: ${query.subject}\nCategory: ${query.category}\nDescription: ${query.description}\n\nThis has been automatically assigned to: ${assigned}.\nExpected Resolution Time: 24-48 business hours.\n\nYou will receive a notification when the status is updated.`
-    );
-
-    pushNotification(`New academic/admin query raised: ${queryId}`, 'success');
+    addAuditLogLocal(currentUser.name, currentUser.role, `Raised Query Ticket ${queryId}`);
+    pushNotificationLocal(`Query raised successfully: ${queryId}`, 'success');
   };
 
-  const updateQueryStatus = (id, newStatus, remarks, officerUser) => {
-    let clientName = '';
-    let category = '';
-    let subject = '';
+  const updateQueryStatus = async (id, newStatus, resolution) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/query/${id}`, 'PATCH', { status: newStatus, resolution });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
 
+    // Local Logic
     setQueries(prev =>
       prev.map(q => {
         if (q.id === id) {
-          clientName = q.raisedBy;
-          category = q.category;
-          subject = q.subject;
           return {
             ...q,
             status: newStatus,
-            resolution: remarks || q.resolution,
-            closedDate: newStatus === 'Resolved' || newStatus === 'Closed' ? new Date().toISOString() : q.closedDate
+            resolution: resolution || q.resolution,
+            closedDate: newStatus === 'Resolved' ? new Date().toISOString() : q.closedDate
           };
         }
         return q;
       })
     );
-
-    addAuditLog(
-      officerUser.name,
-      officerUser.role,
-      `Updated Query ${id} Status to ${newStatus}`,
-      `Spreadsheet logged. Resolution remarks added: ${remarks}`
-    );
-
-    const clientEmail = nameToEmail(clientName);
-    sendEmail(
-      clientEmail,
-      `Query Update Notification - ID: ${id} [${newStatus.toUpperCase()}]`,
-      `Dear ${clientName},\n\nYour query ticket regarding "${category}" has been updated.\n\nTicket ID: ${id}\nSubject: ${subject}\nStatus: ${newStatus}\n\nOfficer Remarks:\n"${remarks || 'No comments provided.'}"\n\n${
-        newStatus === 'Resolved' 
-          ? 'If you are satisfied with this resolution, please mark the ticket closed. If you have further issues, feel free to raise another query.' 
-          : 'The officer is actively investigating your request.'
-      }`
-    );
-
-    pushNotification(`Query ${id} status updated to ${newStatus}.`, 'info');
+    addAuditLogLocal(currentUser.name, currentUser.role, `Updated Query status ${id}`);
+    pushNotificationLocal(`Query ${id} status set to ${newStatus}.`, 'info');
   };
 
-  // 3. COMPLAINT ACTIONS
-  const submitComplaint = (complaint, currentUser) => {
-    const complaintId = genId('CMP');
-    const assigned = getAssignedOfficer(complaint.complaintType, 'complaint');
-    const userEmail = nameToEmail(currentUser.name);
+  // 3. COMPLAINTS
+  const submitComplaint = async (complaint) => {
+    const assignedOfficer = getAssignedOfficer(complaint.complaintType, 'complaint');
+    if (isServerMode) {
+      try {
+        const res = await apiRequest('/dashboard/complaint', 'POST', { ...complaint, assignedOfficer });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
 
+    // Local Logic
+    const complaintId = genId('CMP');
     const newComplaint = {
       id: complaintId,
       submittedBy: currentUser.name,
       role: currentUser.role,
       complaintType: complaint.complaintType,
       description: sanitize(complaint.description),
-      assignedOfficer: assigned,
+      assignedOfficer,
       date: new Date().toISOString(),
       status: 'Pending',
       actionTaken: '',
@@ -994,380 +641,244 @@ export const DatabaseProvider = ({ children }) => {
     };
 
     setComplaints(prev => [newComplaint, ...prev]);
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Submitted Complaint: ${complaintId}`,
-      `Logged row in Complaints Sheet. Category: ${complaint.complaintType}. Assigned to: ${assigned}`
-    );
-
-    sendEmail(
-      userEmail,
-      `Complaint Registered - Ticket: ${complaintId}`,
-      `Dear ${currentUser.name},\n\nYour complaint has been formally registered in our system.\n\nTicket ID: ${complaintId}\nComplaint Type: ${complaint.complaintType}\nDescription: ${complaint.description}\n\nAssigned Officer: ${assigned}\nExpected Resolution Window: 48-72 business hours.\n\nWe take all complaints very seriously. You will be kept informed throughout the investigation.`
-    );
-
-    pushNotification(`New complaint ticket registered: ${complaintId}`, 'warning');
+    addAuditLogLocal(currentUser.name, currentUser.role, `Lodged Grievance Ticket ${complaintId}`);
+    pushNotificationLocal(`Complaint logged successfully: ${complaintId}`, 'warning');
   };
 
-  const updateComplaintStatus = (id, fields, officerUser) => {
-    let clientName = '';
-    let complaintType = '';
+  const updateComplaintStatus = async (id, status, actionTaken) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/complaint/${id}`, 'PATCH', { status, actionTaken });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
 
+    // Local Logic
     setComplaints(prev =>
       prev.map(c => {
         if (c.id === id) {
-          clientName = c.submittedBy;
-          complaintType = c.complaintType;
           return {
             ...c,
-            status: fields.status || c.status,
-            actionTaken: fields.actionTaken || c.actionTaken,
-            internalNotes: fields.internalNotes || c.internalNotes,
-            resolvedDate: fields.status === 'Resolved' ? new Date().toISOString() : c.resolvedDate
+            status: status || c.status,
+            actionTaken: actionTaken || c.actionTaken,
+            resolvedDate: status === 'Resolved' ? new Date().toISOString() : c.resolvedDate
           };
         }
         return c;
       })
     );
-
-    addAuditLog(
-      officerUser.name,
-      officerUser.role,
-      `Updated Complaint ${id} (${fields.status})`,
-      `Action taken: ${fields.actionTaken}. Internal Notes updated.`
-    );
-
-    const clientEmail = nameToEmail(clientName);
-    sendEmail(
-      clientEmail,
-      `Complaint Ticket Update - ID: ${id} [${fields.status}]`,
-      `Dear ${clientName},\n\nWe are writing to provide an update regarding complaint ticket ${id} (${complaintType}).\n\nTicket Status: ${fields.status}\n\nAction Taken / Investigation Summary:\n"${fields.actionTaken || 'The investigation is currently underway.'}"\n\nThank you for your patience as we maintain a safe, functional, and supportive school environment.`
-    );
-
-    pushNotification(`Complaint ${id} status updated to ${fields.status}.`, 'info');
+    addAuditLogLocal(currentUser.name, currentUser.role, `Updated Complaint Status ${id}`);
+    pushNotificationLocal(`Complaint ${id} status updated to ${status}.`, 'info');
   };
 
-  const escalateComplaint = (id, currentUser) => {
-    let clientName = '';
-    let complaintType = '';
+  const escalateComplaint = async (id, notes) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/complaint/${id}`, 'PATCH', { isEscalated: true, internalNotes: notes });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
 
+    // Local Logic
     setComplaints(prev =>
       prev.map(c => {
         if (c.id === id) {
-          clientName = c.submittedBy;
-          complaintType = c.complaintType;
-          return {
-            ...c,
-            isEscalated: true,
-            assignedOfficer: 'Principal (Dr. Adrian Vance)',
-            internalNotes: `${c.internalNotes}\n[ESCALATED by ${currentUser.name} on ${new Date().toLocaleDateString()}: Requires Principal oversight due to critical delay or severity.]`
-          };
+          return { ...c, isEscalated: true, internalNotes: notes || c.internalNotes };
         }
         return c;
       })
     );
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Escalated Complaint ${id} to Principal`,
-      `Re-assigned Officer to Principal. Escalation flag activated.`
-    );
-
-    const principalEmail = 'vance.principal@school.edu';
-    sendEmail(
-      principalEmail,
-      `CRITICAL ESCALATION: Complaint Ticket ${id}`,
-      `Dear Principal Vance,\n\nA complaint ticket has been escalated directly to you for executive intervention.\n\nTicket ID: ${id}\nComplaint Type: ${complaintType}\nSubmitted By: ${clientName}\n\nPlease check your executive dashboard under the Escalations panel immediately.`
-    );
-
-    const clientEmail = nameToEmail(clientName);
-    sendEmail(
-      clientEmail,
-      `Complaint Ticket ESCALATED - ID: ${id}`,
-      `Dear ${clientName},\n\nYour complaint ticket ${id} has been escalated directly to the Principal's Office (Dr. Adrian Vance) for direct review. We are treating this with the highest priority.`
-    );
-
-    pushNotification(`Complaint ${id} escalated to Principal Vance.`, 'danger');
+    addAuditLogLocal(currentUser.name, currentUser.role, `Escalated Complaint ${id} to Vice Principal`);
+    pushNotificationLocal(`Complaint ${id} escalated to Principal office.`, 'danger');
   };
 
-  // Cloud Sync Layer
-  const syncCloudSheet = async (action, sheetName, payload) => {
-    if (!googleSheetsUrl) {
-      const simLog = {
-        id: `sim-${Date.now()}-${Math.random()}`,
-        timestamp: new Date().toISOString(),
-        action,
-        sheet: sheetName,
-        payload,
-        status: 'SUCCESS (LOCAL SIM)',
-        responseText: 'Synchronized with local simulated database spreadsheet.'
-      };
-      setApiLogs(prev => [simLog, ...prev]);
-      return { success: true };
+  // 4. LEAVES
+  const applyLeave = async (leave) => {
+    if (isServerMode) {
+      try {
+        const classTeacher = 'Mr. Marcus Davis';
+        const res = await apiRequest('/dashboard/leave', 'POST', { ...leave, assignedTo: classTeacher });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
     }
 
-    try {
-      const pendingLog = {
-        id: `api-${Date.now()}-${Math.random()}`,
-        timestamp: new Date().toISOString(),
-        action,
-        sheet: sheetName,
-        payload,
-        status: 'PENDING',
-        responseText: ''
-      };
-      setApiLogs(prev => [pendingLog, ...prev]);
+    // Local Logic
+    const leaveId = genId('LV');
+    const newLeave = {
+      id: leaveId,
+      applicantName: currentUser.name,
+      applicantRole: currentUser.role,
+      applicantClass: currentUser.linkedStudentName || 'Faculty',
+      startDate: leave.startDate,
+      endDate: leave.endDate,
+      leaveType: leave.leaveType,
+      reason: sanitize(leave.reason),
+      assignedTo: 'Mr. Marcus Davis',
+      status: 'Pending',
+      remarks: '',
+      createdAt: new Date().toISOString()
+    };
 
-      const response = await fetch(googleSheetsUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action,
-          sheet: sheetName,
-          ...payload
-        })
-      });
+    setLeaves(prev => [newLeave, ...prev]);
+    addAuditLogLocal(currentUser.name, currentUser.role, `Submitted Leave Request ${leaveId}`);
+    pushNotificationLocal(`Leave request logged: ${leaveId}`, 'info');
+  };
 
-      setApiLogs(prev =>
-        prev.map(l =>
-          l.action === action && l.sheet === sheetName && l.status === 'PENDING'
-            ? { ...l, status: 'SUCCESS (OK)', responseText: 'Opaque response dispatched.' }
-            : l
-        )
-      );
-      return { success: true };
-    } catch (err) {
-      setApiLogs(prev =>
-        prev.map(l =>
-          l.action === action && l.sheet === sheetName && l.status === 'PENDING'
-            ? { ...l, status: 'ERROR', responseText: err.message }
-            : l
-        )
-      );
-      return { success: false, error: err.message };
+  const updateLeaveStatus = async (id, status, remarks) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/leave/${id}`, 'PATCH', { status, remarks });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
     }
-  };
 
-  // 7-Day Student Fee Reminder Dispatch Loop
-  const runDuesReminderLoop = (currentUser) => {
-    let sentCount = 0;
-    students.forEach(std => {
-      if (std.remindersActive && std.pendingAmount > 0) {
-        sentCount++;
-        sendEmail(
-          std.parentEmail || 'parent@school.edu',
-          `⚠️ ACTION REQUIRED: Outstanding Student Fees Reminder - ${std.name}`,
-          `Dear ${std.parentName},\n\nThis is an automated 7-day security reminder regarding outstanding student accounts for ${std.name} (${std.class}).\n\nFee Breakdown:\n========================\n- Tuition Fee Dues: $${std.monthlyTuitionFee}\n- Transport Fee Dues: $${std.busFee}\n- Extra-Curricular Fee Dues: $${std.monthlyExtraCurricularFee || 0}\n- Total Outstanding Dues: $${std.pendingAmount}\n- Overdue Account Months: ${std.pendingMonths} Month(s)\n========================\n\nPlease click the link below to resolve outstanding fees:\nhttp://localhost:5173/parent-billing\n\nIf you have already processed your payments, please disregard this alert. Thank you.`
-        );
-      }
-    });
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Executed 7-Day Fee Reminder Sweep`,
-      `Scanned student roster. Dispatched simulated reminder emails to ${sentCount} parents.`
+    // Local Logic
+    setLeaves(prev =>
+      prev.map(lv => {
+        if (lv.id === id) {
+          return { ...lv, status, remarks: remarks || lv.remarks };
+        }
+        return lv;
+      })
     );
-
-    pushNotification(`Completed 7-day reminder sweep. ${sentCount} alerts sent to parents.`, 'success');
+    addAuditLogLocal(currentUser.name, currentUser.role, `Reviewed Leave Request ${id}`);
+    pushNotificationLocal(`Leave request ${id} ${status.toLowerCase()}.`, 'success');
   };
 
-  // 4. ACCOUNTING & TRANSACTION ACTIONS
-  const payFee = (payerName, type, amount, cardDetails, currentUser) => {
-    const payId = `PAY-${Math.floor(10000 + Math.random() * 90000)}`;
-    const txId = `tx_gate_${Math.floor(100000 + Math.random() * 900000)}`;
+  // 5. FINANCES
+  const payFee = async (studentId, amount, paymentType) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest('/dashboard/pay/fee', 'POST', { studentId, amount, paymentType });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
 
-    const amtPaid = Number(amount);
-    
-    // FIX: was hardcoded to 'Liam Chen' regardless of who was logged in.
-    // Now uses the explicit linkedStudentName from AuthContext user profile.
-    const studentToUpdate = currentUser.linkedStudentName || currentUser.name;
-    
-    let updatedStd = null;
-    setStudents(prev => 
+    // Local Logic
+    const payAmt = Number(amount);
+    const txId = `tx_pay_${Math.floor(10000 + Math.random() * 90000)}a`;
+
+    setPayments(prev => [
+      {
+        id: `PAY-${Math.floor(10000 + Math.random() * 90000)}`,
+        userName: currentUser.name,
+        role: 'Parent',
+        paymentType,
+        amount: payAmt.toString(),
+        date: new Date().toISOString().split('T')[0],
+        status: 'PAID',
+        transactionId: txId
+      },
+      ...prev
+    ]);
+
+    setStudents(prev =>
       prev.map(std => {
-        if (std.name === studentToUpdate) {
-          const newPaid = Number(std.paidAmount || 0) + amtPaid;
-          const newPending = Math.max(0, Number(std.totalMonthlyFee) - newPaid);
-          
-          let status = 'Pending';
-          if (newPending <= 0) {
-            status = 'Paid';
-          } else if (newPaid > 0) {
-            status = 'Partial';
-          }
-          
-          updatedStd = {
+        if (std.id === studentId) {
+          const newPending = Math.max(0, std.pendingAmount - payAmt);
+          return {
             ...std,
-            paidAmount: newPaid,
+            paidAmount: std.paidAmount + payAmt,
             pendingAmount: newPending,
-            pendingMonths: newPending <= 0 ? 0 : std.pendingMonths,
-            paymentStatus: status,
-            feeStatus: status === 'Paid' ? 'Paid' : 'Outstanding',
-            remindersActive: newPending > 0,
-            paymentDate: new Date().toISOString().split('T')[0]
+            paymentStatus: newPending === 0 ? 'Paid' : 'Pending',
+            feeStatus: newPending === 0 ? 'Paid' : 'Outstanding',
+            paymentDate: new Date().toISOString().split('T')[0],
+            remindersActive: newPending > 0
           };
-          return updatedStd;
         }
         return std;
       })
     );
 
-    const newPayment = {
-      id: payId,
-      userName: payerName,
-      role: currentUser.role,
-      paymentType: type,
-      amount: amount,
-      date: new Date().toISOString().split('T')[0],
-      status: 'PAID',
-      transactionId: txId
-    };
-
-    setPayments(prev => [newPayment, ...prev]);
-
-    // Send confirmation email
-    const emailTo = nameToEmail(currentUser.name);
-    sendEmail(
-      emailTo,
-      `💳 Beacon Fee Payment Confirmation - ID: ${payId}`,
-      `Dear Parent / Student,\n\nWe have successfully received your payment of $${amount} for "${type}".\n\nTransaction Receipt:\n========================\nPayment ID: ${payId}\nAmount Paid: $${amount}\nGateway Ref ID: ${txId}\nBilling Date: ${new Date().toLocaleDateString()}\nStatus: SUCCESSFUL\n========================\n\nYour student fee account has been updated automatically. Reminders have been stopped for cleared invoices.`
-    );
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Completed Online Payment [${type}] ($${amount})`,
-      `Updated Students table (Paid: $${updatedStd ? updatedStd.paidAmount : 0}, Pending: $${updatedStd ? updatedStd.pendingAmount : 0}). Recalculated balance status.`
-    );
-
-    pushNotification(`Payment of $${amount} for ${type} processed successfully!`, 'success');
-    
-    // Sync to Cloud Sheet
-    if (updatedStd) {
-      syncCloudSheet('update', 'students', {
-        id: updatedStd.id,
-        updates: {
-          paidAmount: updatedStd.paidAmount,
-          pendingAmount: updatedStd.pendingAmount,
-          pendingMonths: updatedStd.pendingMonths,
-          paymentStatus: updatedStd.paymentStatus,
-          feeStatus: updatedStd.feeStatus,
-          remindersActive: updatedStd.remindersActive,
-          paymentDate: updatedStd.paymentDate
-        }
-      });
-      
-      syncCloudSheet('append', 'payments', {
-        row: [payId, payerName, currentUser.role, type, amount, newPayment.date, 'PAID', txId]
-      });
-    }
+    addAuditLogLocal(currentUser.name, currentUser.role, `Paid student fee dues $${payAmt}`);
+    pushNotificationLocal(`Payment of $${payAmt} recorded.`, 'success');
   };
 
-  const payTeacherSalary = (teacherId, amount, currentUser) => {
-    const payId = `PAY-${Math.floor(10000 + Math.random() * 90000)}`;
-    const txId = `tx_salary_${Math.floor(100000 + Math.random() * 900000)}`;
-    
-    const amtPaid = Number(amount);
-    let updatedTch = null;
-    
+  const payTeacherSalary = async (teacherId, amount) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest('/dashboard/pay/salary', 'POST', { teacherId, amount });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
+
+    // Local Logic
+    const payAmt = Number(amount);
+    const txId = `tx_salary_${Math.floor(10000 + Math.random() * 90000)}b`;
+    let facultyName = '';
+
+    setPayments(prev => [
+      {
+        id: `PAY-${Math.floor(10000 + Math.random() * 90000)}`,
+        userName: staff.find(s => s.id === teacherId)?.name || 'Faculty',
+        role: 'Teacher',
+        paymentType: 'Teacher Salary',
+        amount: payAmt.toString(),
+        date: new Date().toISOString().split('T')[0],
+        status: 'PAID',
+        transactionId: txId
+      },
+      ...prev
+    ]);
+
     setStaff(prev =>
-      prev.map(member => {
-        if (member.id === teacherId) {
-          const newPaid = Number(member.paidSalary || 0) + amtPaid;
-          const newRemaining = Math.max(0, Number(member.monthlySalary) - newPaid);
-          
-          let status = 'Pending';
-          if (newRemaining <= 0) {
-            status = 'Paid';
-          } else if (newPaid > 0) {
-            status = 'Partial';
-          }
-          
-          updatedTch = {
-            ...member,
-            paidSalary: newPaid,
-            remainingSalary: newRemaining,
-            paymentStatus: status,
+      prev.map(tch => {
+        if (tch.id === teacherId) {
+          facultyName = tch.name;
+          const newRem = Math.max(0, tch.remainingSalary - payAmt);
+          return {
+            ...tch,
+            paidSalary: tch.paidSalary + payAmt,
+            remainingSalary: newRem,
+            paymentStatus: newRem === 0 ? 'Paid' : 'Pending',
             paymentDate: new Date().toISOString().split('T')[0]
           };
-          return updatedTch;
         }
-        return member;
+        return tch;
       })
     );
 
-    const newPayment = {
-      id: payId,
-      userName: updatedTch ? updatedTch.name : 'Faculty Member',
-      role: 'Teacher',
-      paymentType: 'Teacher Salary',
-      amount: amount,
-      date: new Date().toISOString().split('T')[0],
-      status: 'PAID',
-      transactionId: txId
-    };
-
-    setPayments(prev => [newPayment, ...prev]);
-
-    if (updatedTch) {
-      sendEmail(
-        updatedTch.email,
-        `💸 Salary Slip & Credit Advice - PAID - ID: ${payId}`,
-        `Dear ${updatedTch.name},\n\nWe are pleased to inform you that your monthly salary payout of $${amount} has been successfully processed.\n\nSalary Slip Details:\n========================\nReference Payout ID: ${payId}\nAmount Paid: $${amount}\nRemaining Salary: $${updatedTch.remainingSalary}\nCredit Date: ${new Date().toLocaleDateString()}\nBank Reference ID: ${txId}\n========================\n\nPlease check your bank statement. Thank you for your continued dedication to High School.`
-      );
-
-      addAuditLog(
-        currentUser.name,
-        currentUser.role,
-        `Disbursed Teacher Salary Payout to Mr./Mrs. ${updatedTch.name}`,
-        `Disbursed $${amount}. Remaining salary: $${updatedTch.remainingSalary}. Ref Transaction: ${txId}.`
-      );
-
-      pushNotification(`Salary payout of $${amount} successfully transferred to ${updatedTch.name}.`, 'success');
-      
-      // Cloud Sync
-      syncCloudSheet('update', 'staff', {
-        id: updatedTch.id,
-        updates: {
-          paidSalary: updatedTch.paidSalary,
-          remainingSalary: updatedTch.remainingSalary,
-          paymentStatus: updatedTch.paymentStatus,
-          paymentDate: updatedTch.paymentDate
-        }
-      });
-
-      syncCloudSheet('append', 'payments', {
-        row: [payId, updatedTch.name, 'Teacher', 'Teacher Salary', amount, newPayment.date, 'PAID', txId]
-      });
-    }
+    addAuditLogLocal(currentUser.name, currentUser.role, `Disbursed Salary of $${payAmt} to ${facultyName}`);
+    pushNotificationLocal(`Disbursed $${payAmt} to faculty.`, 'success');
   };
 
-  // 5. REGISTRATION ENROLLMENT
-  const registerStudent = (studentData, currentUser) => {
-    const stdId = `STD-${Math.floor(10000 + Math.random() * 90000)}`;
+  // 6. ENROLLMENTS
+  const registerStudent = async (student) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest('/dashboard/student', 'POST', {
+          name: student.name,
+          email: student.email,
+          className: student.class,
+          rollNumber: student.rollNumber,
+          parentName: student.parentName,
+          parentEmail: student.parentEmail,
+          parentContact: student.parentContact,
+          monthlyTuitionFee: student.monthlyTuitionFee,
+          busFee: student.busFee,
+          monthlyExtraCurricularFee: student.monthlyExtraCurricularFee
+        });
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
 
-    const tuition = Number(studentData.monthlyTuitionFee || 2000);
-    const bus = Number(studentData.busFee || 0);
-    const extra = Number(studentData.monthlyExtraCurricularFee || 150);
+    // Local Logic
+    const studentId = genId('STD');
+    const tuition = Number(student.monthlyTuitionFee) || 0;
+    const bus = Number(student.busFee) || 0;
+    const extra = Number(student.monthlyExtraCurricularFee) || 150;
     const total = tuition + bus + extra;
 
-    const newStudent = {
-      id: stdId,
-      name: studentData.name,
-      email: studentData.email,
-      class: studentData.class || 'Grade 11-A',
-      rollNumber: studentData.rollNumber || String(Math.floor(1 + Math.random() * 40)).padStart(2, '0'),
-      parentName: studentData.parentName || 'Mr./Mrs. Parent',
-      parentEmail: studentData.parentEmail || 'parent@school.edu',
-      parentContact: studentData.parentContact || '555-019-0000',
-      admissionDate: studentData.admissionDate || new Date().toISOString().split('T')[0],
+    const newStd = {
+      id: studentId,
+      name: student.name,
+      email: student.email,
+      class: student.class,
+      rollNumber: student.rollNumber,
+      parentName: student.parentName,
+      parentEmail: student.parentEmail,
+      parentContact: student.parentContact,
+      admissionDate: new Date().toISOString().split('T')[0],
       monthlyTuitionFee: tuition,
       busFee: bus,
       monthlyExtraCurricularFee: extra,
@@ -1381,239 +892,161 @@ export const DatabaseProvider = ({ children }) => {
       remindersActive: true
     };
 
-    setStudents(prev => [...prev, newStudent]);
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Enrolled New Student: ${studentData.name} (${stdId})`,
-      `Logged row in Students spreadsheet. Total monthly fee set to $${total}.`
-    );
-
-    sendEmail(
-      studentData.parentEmail || 'parent@school.edu',
-      `🔔 High School: Student Admission & Dues Setup - ID: ${stdId}`,
-      `Dear ${studentData.parentName || 'Parent'},\n\nWelcome! Your child's (${studentData.name}) admission enrollment is complete.\n\nEnrollment Summary:\n========================\nStudent ID: ${stdId}\nClass Room: ${newStudent.class}\nAdmission Date: ${newStudent.admissionDate}\n\nOutstanding Billing Accounts:\n- Tuition Dues: $${tuition}/month\n- Transportation Dues: $${bus}/month\n- Monthly Total Fee Dues: $${total}\n========================\n\nPlease log into the Parent Billing Portal to clear your outstanding dues. Automated weekly reminders have been activated.`
-    );
-
-    pushNotification(`Successfully enrolled student: ${studentData.name}`, 'success');
-
-    // Cloud Sync
-    syncCloudSheet('append', 'students', {
-      row: [
-        stdId, newStudent.name, newStudent.email, newStudent.class, newStudent.rollNumber,
-        newStudent.parentName, newStudent.parentEmail, newStudent.parentContact, newStudent.admissionDate,
-        tuition, bus, total, 0, total, 1, '', 'Pending', 'Outstanding', true
-      ]
-    });
+    setStudents(prev => [...prev, newStd]);
+    addAuditLogLocal(currentUser.name, currentUser.role, `Admitted Student Roster: ${student.name}`);
+    pushNotificationLocal(`Student registered: ${student.name}`, 'success');
   };
 
-  const registerTeacher = (teacherData, currentUser) => {
-    const staffId = `STF-${Math.floor(10000 + Math.random() * 90000)}`;
-    const baseSalary = Number(teacherData.salary || 4500);
+  const registerTeacher = async (teacher) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest('/dashboard/teacher', 'POST', teacher);
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
 
-    const newStaff = {
-      id: staffId,
-      name: teacherData.name,
-      role: teacherData.role || 'Teacher',
-      email: teacherData.email,
-      phone: teacherData.phone || '555-019-0000',
-      designation: teacherData.designation || 'Academic Staff',
-      department: teacherData.department || 'Advisory',
-      joiningDate: teacherData.joiningDate || new Date().toISOString().split('T')[0],
-      monthlySalary: baseSalary,
-      salary: String(baseSalary), // backward compatibility
+    // Local Logic
+    const teacherId = genId('STF');
+    const sal = Number(teacher.monthlySalary) || 4500;
+    const newTch = {
+      id: teacherId,
+      name: teacher.name,
+      role: 'Teacher',
+      email: teacher.email,
+      phone: teacher.phone,
+      designation: teacher.designation,
+      department: teacher.department,
+      classTeacherOf: teacher.classTeacherOf || '',
+      joiningDate: new Date().toISOString().split('T')[0],
+      monthlySalary: sal,
       paidSalary: 0,
-      remainingSalary: baseSalary,
-      paymentDate: '',
+      remainingSalary: sal,
       paymentStatus: 'Pending'
     };
 
-    setStaff(prev => [...prev, newStaff]);
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Hired New Staff: ${teacherData.name} (${staffId})`,
-      `Logged row in Staff spreadsheet. Monthly salary set to $${baseSalary}.`
-    );
-
-    sendEmail(
-      teacherData.email,
-      `🤝 Welcome to the Faculty: Offer of Appointment - ID: ${staffId}`,
-      `Dear ${teacherData.name},\n\nWe are pleased to formally welcome you to the advisory team at High School!\n\nEmployment Summary:\n========================\nStaff ID: ${staffId}\nAdvisory Role: ${newStaff.role}\nDepartment: ${newStaff.department}\nContract Salary: $${baseSalary}/month\nJoining Date: ${newStaff.joiningDate}\n========================\n\nPlease log into the staff portal using your unique temporary onboarding ID to set up your permanent credentials.`
-    );
-
-    pushNotification(`Successfully hired staff member: ${teacherData.name}`, 'success');
-
-    // Cloud Sync
-    syncCloudSheet('append', 'staff', {
-      row: [
-        staffId, newStaff.name, newStaff.role, newStaff.email, newStaff.phone,
-        newStaff.designation, newStaff.department, newStaff.joiningDate,
-        baseSalary, 0, baseSalary, '', 'Pending'
-      ]
-    });
+    setStaff(prev => [...prev, newTch]);
+    addAuditLogLocal(currentUser.name, currentUser.role, `Registered Faculty Member: ${teacher.name}`);
+    pushNotificationLocal(`Faculty registered: ${teacher.name}`, 'success');
   };
 
-  // Direct sheets editor (simulates manual database alterations by Admins)
-  const updateSheetRow = (sheetName, rowId, updatedFields, adminUser) => {
-    if (sheetName === 'appointments') {
-      setAppointments(prev =>
-        prev.map(row => (row.id === rowId ? { ...row, ...updatedFields } : row))
-      );
-    } else if (sheetName === 'queries') {
-      setQueries(prev =>
-        prev.map(row => (row.id === rowId ? { ...row, ...updatedFields } : row))
-      );
-    } else if (sheetName === 'complaints') {
-      setComplaints(prev =>
-        prev.map(row => (row.id === rowId ? { ...row, ...updatedFields } : row))
-      );
-    } else if (sheetName === 'payments') {
-      setPayments(prev =>
-        prev.map(row => (row.id === rowId ? { ...row, ...updatedFields } : row))
-      );
-    } else if (sheetName === 'students') {
-      setStudents(prev =>
-        prev.map(row => (row.id === rowId ? { ...row, ...updatedFields } : row))
-      );
+  // 7. SHEET GENERAL CRUD
+  const updateSheetRow = async (sheetName, id, updates) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/sheet/${sheetName}/${id}`, 'PUT', updates);
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
+
+    // Local Logic
+    if (sheetName === 'students') {
+      setStudents(prev => prev.map(s => (s.id === id ? { ...s, ...updates } : s)));
     } else if (sheetName === 'staff') {
-      setStaff(prev =>
-        prev.map(row => (row.id === rowId ? { ...row, ...updatedFields } : row))
-      );
-    }
-
-    addAuditLog(
-      adminUser.name,
-      adminUser.role,
-      `Manually edited Google Sheet row (${sheetName} -> ${rowId})`,
-      `Altered values: ${JSON.stringify(updatedFields)}`
-    );
-
-    pushNotification(`Google Sheets: Row ${rowId} manually updated.`, 'info');
-
-    // Cloud Sync
-    syncCloudSheet('update', sheetName, {
-      id: rowId,
-      updates: updatedFields
-    });
-  };
-
-  const deleteSheetRow = (sheetName, rowId, adminUser) => {
-    if (sheetName === 'appointments') {
-      setAppointments(prev => prev.filter(row => row.id !== rowId));
+      setStaff(prev => prev.map(s => (s.id === id ? { ...s, ...updates } : s)));
+    } else if (sheetName === 'appointments') {
+      setAppointments(prev => prev.map(s => (s.id === id ? { ...s, ...updates } : s)));
     } else if (sheetName === 'queries') {
-      setQueries(prev => prev.filter(row => row.id !== rowId));
+      setQueries(prev => prev.map(s => (s.id === id ? { ...s, ...updates } : s)));
     } else if (sheetName === 'complaints') {
-      setComplaints(prev => prev.filter(row => row.id !== rowId));
-    } else if (sheetName === 'payments') {
-      setPayments(prev => prev.filter(row => row.id !== rowId));
-    } else if (sheetName === 'students') {
-      setStudents(prev => prev.filter(row => row.id !== rowId));
+      setComplaints(prev => prev.map(s => (s.id === id ? { ...s, ...updates } : s)));
+    } else if (sheetName === 'leaves') {
+      setLeaves(prev => prev.map(s => (s.id === id ? { ...s, ...updates } : s)));
+    }
+    addAuditLogLocal(currentUser.name, currentUser.role, `Modified Row in ${sheetName} for ${id}`);
+  };
+
+  const deleteSheetRow = async (sheetName, id) => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest(`/dashboard/sheet/${sheetName}/${id}`, 'DELETE');
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
+    }
+
+    // Local Logic
+    if (sheetName === 'students') {
+      setStudents(prev => prev.filter(s => s.id !== id));
     } else if (sheetName === 'staff') {
-      setStaff(prev => prev.filter(row => row.id !== rowId));
+      setStaff(prev => prev.filter(s => s.id !== id));
+    } else if (sheetName === 'appointments') {
+      setAppointments(prev => prev.filter(s => s.id !== id));
+    } else if (sheetName === 'queries') {
+      setQueries(prev => prev.filter(s => s.id !== id));
+    } else if (sheetName === 'complaints') {
+      setComplaints(prev => prev.filter(s => s.id !== id));
+    } else if (sheetName === 'leaves') {
+      setLeaves(prev => prev.filter(s => s.id !== id));
     }
-
-    addAuditLog(
-      adminUser.name,
-      adminUser.role,
-      `Deleted Google Sheet row (${sheetName} -> ${rowId})`,
-      `Permanently removed record from online spreadsheet.`
-    );
-
-    pushNotification(`Google Sheets: Row ${rowId} deleted.`, 'warning');
-
-    // Cloud Sync
-    syncCloudSheet('delete', sheetName, {
-      id: rowId
-    });
+    addAuditLogLocal(currentUser.name, currentUser.role, `Purged Record ID: ${id} from ${sheetName}`);
+    pushNotificationLocal(`Purged record from sheet: ${sheetName}`, 'warning');
   };
 
-  const resetAllData = (adminUser) => {
-    setAppointments(INITIAL_APPOINTMENTS);
-    setQueries(INITIAL_QUERIES);
-    setComplaints(INITIAL_COMPLAINTS);
-    setVirtualEmails(INITIAL_EMAILS);
-    setAuditLogs(INITIAL_AUDIT_LOGS);
-    setPayments(INITIAL_PAYMENTS);
-    setStudents(INITIAL_STUDENTS);
-    setStaff(INITIAL_STAFF);
-    setLeaves(INITIAL_LEAVES);
-
-    addAuditLog(
-      adminUser.name,
-      adminUser.role,
-      'System Database Reset',
-      'Flushed local storage databases and restored initial mock entries.'
-    );
-
-    pushNotification('System databases reset to default state.', 'warning');
-  };
-
-  // Leaves Operations
-  const applyLeave = (leaveData, currentUser) => {
-    const leaveId = `LV-${Math.floor(10000 + Math.random() * 90000)}`;
-    let assignedTo = 'Ms. Clara Vance';
-    let applicantClass = currentUser.role === 'Student' ? currentUser.linkedStudentName : currentUser.department || currentUser.role;
-
-    if (currentUser.role === 'Student') {
-      const stdRecord = students.find(s => s.name === currentUser.name);
-      const studentClass = stdRecord ? stdRecord.class : 'Grade 11-A';
-      applicantClass = studentClass;
-
-      const classTeacher = staff.find(s => s.classTeacherOf === studentClass);
-      assignedTo = classTeacher ? classTeacher.name : 'Mr. Marcus Davis';
+  const markAllNotificationsRead = async () => {
+    if (isServerMode) {
+      try {
+        const res = await apiRequest('/dashboard/notifications/clear', 'POST');
+        if (res.success) { return loadAllData(); }
+      } catch (err) { console.warn('API Err, falling back'); }
     }
-
-    const newLeave = {
-      id: leaveId,
-      applicantName: currentUser.name,
-      applicantRole: currentUser.role,
-      applicantClass: applicantClass,
-      startDate: leaveData.startDate,
-      endDate: leaveData.endDate,
-      leaveType: leaveData.leaveType,
-      reason: leaveData.reason,
-      assignedTo: assignedTo,
-      status: 'Pending',
-      remarks: '',
-      createdAt: new Date().toISOString()
-    };
-
-    setLeaves(prev => [newLeave, ...prev]);
-
-    addAuditLog(
-      currentUser.name,
-      currentUser.role,
-      `Submitted Leave Request (${leaveId})`,
-      `Applied for ${leaveData.leaveType} from ${leaveData.startDate} to ${leaveData.endDate}. Routed to ${assignedTo}.`
-    );
-
-    pushNotification(`Leave request ${leaveId} submitted successfully!`, 'success');
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   };
 
-  const updateLeaveStatus = (leaveId, status, remarks, currentUser) => {
-    setLeaves(prev =>
-      prev.map(lv => {
-        if (lv.id === leaveId) {
-          sendEmail(
-            lv.applicantRole === 'Teacher' ? 'davis.math@school.edu' : 'liam.chen@school.edu',
-            `🔔 Leave Request Update - ${status} - ID: ${leaveId}`,
-            `Dear ${lv.applicantName},\n\nYour leave request (${leaveId}) for ${lv.leaveType} (${lv.startDate} to ${lv.endDate}) has been ${status.toUpperCase()} by ${currentUser.name}.\n\nApprover Remarks:\n"${remarks || 'No remarks provided.'}"`
-          );
-
-          return {
-            ...lv,
-            status: status,
-            remarks: remarks
-          };
+  const runDuesReminderLoop = async (currentUser) => {
+    let sentCount = 0;
+    if (isServerMode) {
+      try {
+        for (const std of students) {
+          if (std.remindersActive && std.pendingAmount > 0) {
+            sentCount++;
+            await apiRequest('/dashboard/email/send', 'POST', {
+              to: std.parentEmail || 'parent@school.edu',
+              subject: `⚠️ ACTION REQUIRED: Outstanding Student Fees Reminder - ${std.name}`,
+              body: `Dear ${std.parentName},\n\nThis is an automated reminder regarding outstanding student accounts for ${std.name} (${std.class}).`
+            });
+          }
         }
-        return lv;
-      })
-    );
+        await loadAllData();
+        return;
+      } catch (err) {
+        console.warn('API Err, falling back');
+      }
+    }
 
-    pushNotification(`Leave request ${leaveId} has been ${status.toLowerCase()}!`, 'success');
+    // Local Logic
+    students.forEach(std => {
+      if (std.remindersActive && std.pendingAmount > 0) {
+        sentCount++;
+        sendEmailLocal(
+          std.parentEmail || 'parent@school.edu',
+          `⚠️ ACTION REQUIRED: Outstanding Student Fees Reminder - ${std.name}`,
+          `Dear ${std.parentName},\n\nOutstanding fee reminder for ${std.name}. Dues: $${std.pendingAmount}.`
+        );
+      }
+    });
+    addAuditLogLocal(currentUser.name, currentUser.role, `Executed 7-Day Fee Reminder Sweep`);
+    pushNotificationLocal(`Completed 7-day reminder sweep. ${sentCount} alerts sent to parents.`, 'success');
+  };
+
+  const resetAllData = () => {
+    if (window.confirm("Restore default simulated sheets?")) {
+      setAppointments(INITIAL_APPOINTMENTS);
+      setQueries(INITIAL_QUERIES);
+      setComplaints(INITIAL_COMPLAINTS);
+      setVirtualEmails(INITIAL_EMAILS);
+      setAuditLogs(INITIAL_AUDIT_LOGS);
+      setPayments(INITIAL_PAYMENTS);
+      setStudents(INITIAL_STUDENTS);
+      setStaff(INITIAL_STAFF);
+      setLeaves(INITIAL_LEAVES);
+      setNotifications([]);
+      setGoogleSheetsUrl('');
+      setApiLogs([]);
+      pushNotificationLocal("Simulated sheets reset completed.", 'success');
+    }
+  };
+
+  const pushNotification = (message, type = 'info') => {
+    pushNotificationLocal(message, type);
   };
 
   return (
